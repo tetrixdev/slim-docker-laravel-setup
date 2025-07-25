@@ -1,0 +1,77 @@
+services:
+  {{PROJECT_NAME}}-php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: {{PROJECT_NAME}}-php
+    restart: unless-stopped
+    working_dir: /var/www
+    entrypoint: ["/entrypoint.sh"]
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+    volumes:
+      - ./{{LARAVEL_DIR}}:/var/www
+      - .env:/var/www/.env
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./docker/php/entrypoint.sh:/entrypoint.sh:ro
+    networks:
+      - {{PROJECT_NAME}}
+    depends_on:
+      {{PROJECT_NAME}}-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  {{PROJECT_NAME}}-nginx:
+    image: nginx:1.29-alpine
+    container_name: {{PROJECT_NAME}}-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./{{LARAVEL_DIR}}:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - {{PROJECT_NAME}}
+    depends_on:
+      {{PROJECT_NAME}}-php:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  {{PROJECT_NAME}}-postgres:
+    image: postgres:17-alpine
+    container_name: {{PROJECT_NAME}}-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: {{PROJECT_NAME}}
+      POSTGRES_USER: {{PROJECT_NAME}}
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-laravel}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - {{PROJECT_NAME}}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{PROJECT_NAME}} -d {{PROJECT_NAME}}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  {{PROJECT_NAME}}:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
