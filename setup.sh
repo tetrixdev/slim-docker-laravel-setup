@@ -155,6 +155,7 @@ update_laravel_config() {
     # Update database configuration
     sed -i "s/'default' => env('DB_CONNECTION', '[^']*')/'default' => env('DB_CONNECTION', 'pgsql')/g" "$db_config"
     sed -i "s/'host' => env('DB_HOST', '[^']*')/'host' => env('DB_HOST', '$PROJECT_NAME-postgres')/g" "$db_config"
+    sed -i "s/'port' => env('DB_PORT', '[^']*')/'port' => '5432'/g" "$db_config"
     sed -i "s/'database' => env('DB_DATABASE', '[^']*')/'database' => env('DB_DATABASE', '$PROJECT_NAME')/g" "$db_config"
     sed -i "s/'username' => env('DB_USERNAME', '[^']*')/'username' => env('DB_USERNAME', '$PROJECT_NAME')/g" "$db_config"
     
