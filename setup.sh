@@ -198,11 +198,9 @@ setup_laravel_docker() {
     print_success "GitHub Action workflow created"
     
     # Process production compose file
-    print_info "Creating production docker-compose file..."
-    mkdir -p docker/production
-    cp "$(dirname "$0")/docker/production/compose.yml" docker/production/compose.yml
+    print_info "Processing production docker-compose file..."
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{GITHUB_REPOSITORY_OWNER}}/$GITHUB_REPOSITORY_OWNER/g" docker/production/compose.yml
-    print_success "docker/production/compose.yml created"
+    print_success "docker/production/compose.yml processed"
     
     # Create environment files
     print_info "Creating .env files..."
@@ -214,13 +212,11 @@ setup_laravel_docker() {
     cp .env.example .env
     sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(openssl rand -base64 16)/" .env
     
-    # Create docker/production/.env.example
-    cp "$(dirname "$0")/docker/production/.env.example" docker/production/.env.example
+    # Process docker/production/.env.example
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s|{{PRODUCTION_URL}}|$PRODUCTION_URL|g" docker/production/.env.example
     sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=CHANGE_THIS_PASSWORD/" docker/production/.env.example
     
-    # Create production deployment README
-    cp "$(dirname "$0")/docker/production/README.md" docker/production/README.md
+    # Process production deployment README
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{GITHUB_REPOSITORY_OWNER}}/$GITHUB_REPOSITORY_OWNER/g" docker/production/README.md
     
     print_success "Production deployment package created in docker/production/"
