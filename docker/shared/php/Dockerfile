@@ -29,6 +29,3 @@ RUN mkdir -p /var/www/storage/framework/{sessions,views,cache} \
 
 # Set working directory
 WORKDIR /var/www
-
-# Expose port 9000 for PHP-FPM
-EXPOSE 9000

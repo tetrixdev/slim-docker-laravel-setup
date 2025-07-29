@@ -30,6 +30,77 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to validate and prepare directory structure
+validate_directory() {
+    print_info "Validating directory structure..."
+    
+    # Case 1: Check if we're in an existing Laravel project root
+    if [ -f "artisan" ]; then
+        print_info "Detected existing Laravel project. Moving files to www/ folder..."
+        
+        # Create www directory
+        mkdir -p www
+        
+        # Move all files except www to www/ folder (handle setup files gracefully)
+        for item in *; do
+            if [ "$item" != "www" ] && [ "$item" != "setup.sh" ] && [ "$item" != "compose.yml.template" ] && [ "$item" != "docker" ] && [ "$item" != ".env.example" ]; then
+                mv "$item" www/
+            fi
+        done
+        
+        # Move hidden files too (like .env, .git, etc.)
+        for item in .*; do
+            if [ "$item" != "." ] && [ "$item" != ".." ] && [ -e "$item" ]; then
+                mv "$item" www/
+            fi
+        done
+        
+        print_success "Laravel project moved to www/ folder"
+        return
+    fi
+    
+    # Case 2: Check if we're in a prepared directory with www/ folder
+    if [ -d "www" ]; then
+        # Check if Laravel project has required files
+        if [ ! -f "www/artisan" ]; then
+            print_error "No 'artisan' file found in 'www/'. Are you sure this is a Laravel project?"
+            exit 1
+        fi
+        
+        # Check for unexpected files (allow setup files and www folder)
+        visible_files=$(ls -1 2>/dev/null | wc -l)
+        if [ "$visible_files" -gt 0 ]; then
+            allowed_files="www setup.sh compose.yml docker .env.example CLAUDE.md README.md"
+            for file in *; do
+                if [ -e "$file" ]; then
+                    case " $allowed_files " in
+                        *" $file "*) ;;
+                        *) 
+                            print_error "Unexpected file/folder found: $file"
+                            print_info "Expected: empty directory with 'www/' folder containing Laravel"
+                            exit 1
+                            ;;
+                    esac
+                fi
+            done
+        fi
+        
+        print_success "Directory structure validation passed"
+        return
+    fi
+    
+    # Case 3: Neither Laravel root nor prepared directory
+    print_error "Invalid directory structure detected"
+    print_info ""
+    print_info "This setup script expects one of:"
+    print_info "  1. Laravel project root (with 'artisan' file) - will move to www/"
+    print_info "  2. Empty directory with 'www/' folder containing Laravel"
+    print_info ""
+    print_info "Current directory contents:"
+    ls -la
+    exit 1
+}
+
 # Check prerequisites
 check_prerequisites() {
     print_info "Checking prerequisites..."
@@ -62,29 +133,45 @@ setup_laravel_docker() {
     print_info "🚀 Laravel Docker Setup"
     echo ""
     
+    # Validate directory structure first
+    validate_directory
+    
+    # Set Laravel directory (always "www" now)
+    LARAVEL_DIR="www"
+    
     # Get project details from user
     PROJECT_NAME=$(get_input "Enter your project name (lowercase, no spaces)" "mylaravel")
     PROJECT_NAME=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
     
-    LARAVEL_DIR=$(get_input "Enter Laravel directory name (relative to current dir)" "www")
     PRODUCTION_URL=$(get_input "Enter production URL (for .env.production)" "https://example.com")
     
-    # Validate Laravel directory exists
-    if [ ! -d "$LARAVEL_DIR" ]; then
-        print_error "Laravel directory '$LARAVEL_DIR' does not exist in current directory"
-        print_info "Please ensure your Laravel project is in the '$LARAVEL_DIR' folder"
-        exit 1
+    # Try to auto-detect GitHub repository owner
+    DETECTED_OWNER=""
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        # Try git remote first
+        DETECTED_OWNER=$(git remote get-url origin 2>/dev/null | sed -n 's#.*github\.com[:/]\([^/]*\)/.*#\1#p')
+        if [ -z "$DETECTED_OWNER" ]; then
+            # Fall back to git config user name
+            DETECTED_OWNER=$(git config user.name 2>/dev/null)
+        fi
     fi
     
-    # Check if Laravel project has required files
-    if [ ! -f "$LARAVEL_DIR/artisan" ]; then
-        print_error "No 'artisan' file found in '$LARAVEL_DIR'. Are you sure this is a Laravel project?"
-        exit 1
+    # Ask user about GitHub repository owner
+    if [ -n "$DETECTED_OWNER" ]; then
+        print_info "Auto-detected GitHub repository owner: $DETECTED_OWNER"
+        USE_DETECTED=$(get_input "Use auto-detected owner for container registry? (yes/no)" "yes")
+        if [[ "$USE_DETECTED" =~ ^[Yy]([Ee][Ss])?$ ]]; then
+            GITHUB_REPOSITORY_OWNER="$DETECTED_OWNER"
+        else
+            GITHUB_REPOSITORY_OWNER=$(get_input "Enter GitHub repository owner manually" "${DETECTED_OWNER}")
+        fi
+    else
+        GITHUB_REPOSITORY_OWNER=$(get_input "Enter GitHub repository owner (for container registry)" "$(whoami)")
     fi
     
     print_info "Setting up Docker configuration for project: $PROJECT_NAME"
     
-    # Copy docker directory if it doesn't exist
+    # Copy docker directories if they don't exist
     if [ ! -d "docker" ]; then
         print_info "Copying Docker configuration files..."
         cp -r "$(dirname "$0")/docker" .
@@ -94,73 +181,94 @@ setup_laravel_docker() {
     fi
     
     # Process compose.yml template
-    print_info "Creating docker-compose.yml..."
-    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{LARAVEL_DIR}}/$LARAVEL_DIR/g" \
-        "$(dirname "$0")/compose.yml.template" > compose.yml
-    print_success "docker-compose.yml created"
+    print_info "Processing docker-compose.yml..."
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{LARAVEL_DIR}}/$LARAVEL_DIR/g" compose.yml
+    print_success "docker-compose.yml configured"
     
     # Process nginx template
     print_info "Updating nginx configuration..."
-    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
-        "$(dirname "$0")/docker/nginx/default.conf" > docker/nginx/default.conf
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" docker/shared/nginx/default.conf
     print_success "Nginx configuration updated"
+    
+    # Copy and process GitHub Action workflow
+    print_info "Setting up GitHub Action workflow..."
+    mkdir -p .github/workflows
+    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
+        "$(dirname "$0")/docker/local/.github/workflows/docker-build.yml" > .github/workflows/docker-build.yml
+    print_success "GitHub Action workflow created"
+    
+    # Process production compose file
+    print_info "Creating production docker-compose file..."
+    mkdir -p docker/production
+    cp "$(dirname "$0")/docker/production/compose.yml" docker/production/compose.yml
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{GITHUB_REPOSITORY_OWNER}}/$GITHUB_REPOSITORY_OWNER/g" docker/production/compose.yml
+    print_success "docker/production/compose.yml created"
     
     # Create environment files
     print_info "Creating .env files..."
     
-    # Development environment
-    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
-        "$(dirname "$0")/.env.dev.template" > .env.dev
+    # Update .env.example with project-specific values
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" .env.example
     
-    # Production environment  
-    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s|{{PRODUCTION_URL}}|$PRODUCTION_URL|g" \
-        "$(dirname "$0")/.env.production.template" > .env.production
+    # Create .env from .env.example with generated password
+    cp .env.example .env
+    sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(openssl rand -base64 16)/" .env
     
-    # Copy development environment as default
-    cp .env.dev .env
+    # Create docker/production/.env.example
+    cp "$(dirname "$0")/docker/production/.env.example" docker/production/.env.example
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s|{{PRODUCTION_URL}}|$PRODUCTION_URL|g" docker/production/.env.example
+    sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=CHANGE_THIS_PASSWORD/" docker/production/.env.example
     
-    print_success "Environment files created (.env, .env.dev, .env.production)"
+    # Create production deployment README
+    cp "$(dirname "$0")/docker/production/README.md" docker/production/README.md
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{GITHUB_REPOSITORY_OWNER}}/$GITHUB_REPOSITORY_OWNER/g" docker/production/README.md
     
-    # Update Laravel database configuration
-    update_laravel_config
+    print_success "Production deployment package created in docker/production/"
+    
+    # Configure Vite for Docker if needed
+    if [ -f "$LARAVEL_DIR/vite.config.js" ]; then
+        print_info "Configuring Vite for Docker..."
+        if ! grep -q "server:" "$LARAVEL_DIR/vite.config.js"; then
+            # Add server configuration for Docker before the closing brace
+            sed -i '/^});$/i\    server: {\
+        host: '\''0.0.0.0'\'',\
+        port: 5173,\
+        hmr: {\
+            host: '\''localhost'\'',\
+        },\
+    },' "$LARAVEL_DIR/vite.config.js"
+            print_success "Vite configured for Docker (server block added)"
+        else
+            print_info "Vite server configuration already exists, skipping"
+        fi
+    fi
+    
+    # Clean up development files not needed for end users
+    if [ -f "CLAUDE.md" ]; then
+        print_info "Removing development documentation..."
+        rm -f CLAUDE.md
+    fi
+    
+    # Note: Laravel database configuration is handled via environment variables
     
     print_success "🎉 Setup completed successfully!"
     print_info ""
-    print_info "Next steps:"
+    print_info "Development setup:"
     print_info "1. Run: docker-compose up -d"
     print_info "2. Your Laravel app will be available at: http://localhost"
-    print_info "3. To switch environments: cp .env.production .env (then restart containers)"
+    print_info ""
+    print_info "Production deployment:"
+    print_info "1. Create GitHub release to trigger image build"
+    print_info "2. Deploy with: docker-compose -f compose.production.yml up -d"
+    print_info "3. Use built images: ghcr.io/$GITHUB_REPOSITORY_OWNER/$PROJECT_NAME-php:latest"
     print_info ""
     print_info "Database connection details:"
     print_info "  Host: $PROJECT_NAME-postgres"
     print_info "  Database: $PROJECT_NAME"
     print_info "  Username: $PROJECT_NAME"
-    print_info "  Password: laravel"
+    print_info "  Password: [auto-generated for development]"
 }
 
-# Function to update Laravel database configuration
-update_laravel_config() {
-    local db_config="$LARAVEL_DIR/config/database.php"
-    
-    if [ ! -f "$db_config" ]; then
-        print_warning "Laravel database config not found, skipping automatic update"
-        return
-    fi
-    
-    print_info "Updating Laravel database configuration..."
-    
-    # Backup original config
-    cp "$db_config" "$db_config.backup"
-    
-    # Update database configuration
-    sed -i "s/'default' => env('DB_CONNECTION', '[^']*')/'default' => env('DB_CONNECTION', 'pgsql')/g" "$db_config"
-    sed -i "s/'host' => env('DB_HOST', '[^']*')/'host' => env('DB_HOST', '$PROJECT_NAME-postgres')/g" "$db_config"
-    sed -i "s/'port' => env('DB_PORT', '[^']*')/'port' => '5432'/g" "$db_config"
-    sed -i "s/'database' => env('DB_DATABASE', '[^']*')/'database' => env('DB_DATABASE', '$PROJECT_NAME')/g" "$db_config"
-    sed -i "s/'username' => env('DB_USERNAME', '[^']*')/'username' => env('DB_USERNAME', '$PROJECT_NAME')/g" "$db_config"
-    
-    print_success "Laravel database configuration updated (backup saved as database.php.backup)"
-}
 
 # Display usage information
 usage() {
