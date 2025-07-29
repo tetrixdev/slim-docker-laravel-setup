@@ -12,8 +12,6 @@ services:
       context: .
       dockerfile: docker/local/php/Dockerfile
     container_name: {{PROJECT_NAME}}-php
-    depends_on:
-      - laravel-php-base
     restart: unless-stopped
     working_dir: /var/www
     entrypoint: ["/entrypoint.sh"]
