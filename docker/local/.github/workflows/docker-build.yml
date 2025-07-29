@@ -20,20 +20,11 @@ jobs:
       - name: Login to container registry
         run: docker login ghcr.io --username=${{ github.actor }} --password=${{ secrets.GITHUB_TOKEN }}
 
-      # Build shared PHP base image
-      - name: Build shared PHP base image
-        run: |
-          docker buildx build \
-            --file docker-shared/php/Dockerfile \
-            --progress plain \
-            --tag laravel-php-base \
-            .
-
-      # Build and push Laravel PHP application image
+      # Build and push Laravel PHP application image using production Dockerfile
       - name: Build and push {{PROJECT_NAME}}-php image
         run: |
           docker buildx build \
-            --file docker-production/php/Dockerfile \
+            --file docker/production/php/Dockerfile \
             --progress plain \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from=type=registry,ref=ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:cache \
@@ -47,7 +38,7 @@ jobs:
       - name: Build and push {{PROJECT_NAME}}-nginx image
         run: |
           docker buildx build \
-            --file docker-production/nginx/Dockerfile \
+            --file docker/production/nginx/Dockerfile \
             --progress plain \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from=type=registry,ref=ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:cache \
@@ -64,4 +55,4 @@ jobs:
           echo "📦 ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:${{ github.event.release.tag_name }}"
           echo "📦 ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:${{ github.event.release.tag_name }}"
           echo ""
-          echo "🚀 Deploy with: cd docker-production && docker-compose up -d"
+          echo "🚀 Deploy with: cd docker/production && docker-compose up -d"

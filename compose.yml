@@ -1,12 +1,4 @@
 services:
-  laravel-php-base:
-    build:
-      context: .
-      dockerfile: docker/shared/php/Dockerfile
-    image: laravel-php-base
-    profiles:
-      - base-only
-
   {{PROJECT_NAME}}-php:
     build:
       context: .
@@ -25,8 +17,6 @@ services:
     networks:
       - {{PROJECT_NAME}}
     depends_on:
-      laravel-php-base:
-        condition: service_started
       {{PROJECT_NAME}}-postgres:
         condition: service_healthy
     healthcheck:
