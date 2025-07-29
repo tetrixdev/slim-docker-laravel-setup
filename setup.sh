@@ -169,17 +169,6 @@ setup_laravel_docker() {
         GITHUB_REPOSITORY_OWNER=$(get_input "Enter GitHub repository owner (for container registry)" "$(whoami)")
     fi
     
-    print_info "Setting up Docker configuration for project: $PROJECT_NAME"
-    
-    # Copy docker directories if they don't exist
-    if [ ! -d "docker" ]; then
-        print_info "Copying Docker configuration files..."
-        cp -r "$(dirname "$0")/docker" .
-        print_success "Docker configuration copied"
-    else
-        print_warning "Docker directory already exists, skipping copy"
-    fi
-    
     # Process compose.yml template
     print_info "Processing docker-compose.yml..."
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{LARAVEL_DIR}}/$LARAVEL_DIR/g" compose.yml
@@ -213,7 +202,8 @@ setup_laravel_docker() {
     sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(openssl rand -base64 16)/" .env
     
     # Process docker/production/.env.example
-    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s|{{PRODUCTION_URL}}|$PRODUCTION_URL|g" docker/production/.env.example
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" docker/production/.env.example
+    sed -i "s#{{PRODUCTION_URL}}#$PRODUCTION_URL#g" docker/production/.env.example
     sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=CHANGE_THIS_PASSWORD/" docker/production/.env.example
     
     # Process production deployment README
