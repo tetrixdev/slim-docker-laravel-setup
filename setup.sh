@@ -201,6 +201,9 @@ setup_laravel_docker() {
     cp .env.example .env
     sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(openssl rand -base64 16)/" .env
     
+    # Copy the Docker .env to Laravel directory
+    cp .env www/.env
+
     # Process docker/production/.env.example
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" docker/production/.env.example
     sed -i "s#{{PRODUCTION_URL}}#$PRODUCTION_URL#g" docker/production/.env.example

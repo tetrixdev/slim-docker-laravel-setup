@@ -13,7 +13,7 @@ services:
       - ./{{LARAVEL_DIR}}:/var/www
       - .env:/var/www/.env
       - ./docker/shared/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-      - ./docker/local/php/entrypoint.sh:/entrypoint.sh:ro
+      - ./docker/local/php/entrypoint.sh:/entrypoint.sh
     networks:
       - {{PROJECT_NAME}}
     depends_on:
