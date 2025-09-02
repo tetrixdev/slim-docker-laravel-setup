@@ -50,6 +50,38 @@ docker-compose up -d
 # Your app is ready at http://localhost
 ```
 
+## Local Development Testing
+
+For testing this Docker setup locally during development:
+
+### Setup Test Project
+```bash
+mkdir ~/projects/test-project
+cd ~/projects/test-project
+
+# Install Laravel
+composer create-project laravel/laravel www
+
+# Copy Docker setup from your local development directory (including dotfiles)
+cp -r ./../slim-docker-laravel-setup/. .
+
+# Run setup
+./setup.sh
+
+# Start containers
+docker-compose up -d
+```
+
+### Cleanup Test Environment
+```bash
+cd ~/projects/test-project
+
+# Stop and remove containers, networks, and volumes
+docker-compose down -v
+
+sudo rm -rf ~/projects/test-project/
+```
+
 ## Project Structure
 
 After running setup, your project will have:
@@ -263,7 +295,7 @@ docker-compose restart
 
 # Switch back to development
 cp .env.example .env
-sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(openssl rand -base64 16)/" .env
+sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(tr -dc 'A-Za-z0-9@#%^&*()_+-=' < /dev/urandom | head -c 32)/" .env
 docker-compose restart
 ```
 

@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 # Colors for output
 RED='\033[0;31m'
@@ -199,10 +200,7 @@ setup_laravel_docker() {
     
     # Create .env from .env.example with generated password
     cp .env.example .env
-    sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(openssl rand -base64 16)/" .env
-    
-    # Copy the Docker .env to Laravel directory
-    cp .env www/.env
+    sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)/" .env
 
     # Process docker/production/.env.example
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" docker/production/.env.example
