@@ -25,53 +25,53 @@ This is a Laravel Docker setup tool that creates containerized development and p
 ./setup.sh
 
 # Start development environment
-docker-compose up -d
+docker compose up -d
 
 # Check container status and health
-docker-compose ps
+docker compose ps
 ```
 
 **Laravel Operations (replace {PROJECT_NAME} with actual project name):**
 ```bash
 # Database operations
-docker-compose exec {PROJECT_NAME}-php php artisan migrate
-docker-compose exec {PROJECT_NAME}-php php artisan migrate:fresh --seed
-docker-compose exec {PROJECT_NAME}-php php artisan db:seed
+docker compose exec {PROJECT_NAME}-php php artisan migrate
+docker compose exec {PROJECT_NAME}-php php artisan migrate:fresh --seed
+docker compose exec {PROJECT_NAME}-php php artisan db:seed
 
 # Laravel utilities
-docker-compose exec {PROJECT_NAME}-php php artisan key:generate
-docker-compose exec {PROJECT_NAME}-php php artisan tinker
-docker-compose exec {PROJECT_NAME}-php php artisan optimize:clear
-docker-compose exec {PROJECT_NAME}-php php artisan config:cache
+docker compose exec {PROJECT_NAME}-php php artisan key:generate
+docker compose exec {PROJECT_NAME}-php php artisan tinker
+docker compose exec {PROJECT_NAME}-php php artisan optimize:clear
+docker compose exec {PROJECT_NAME}-php php artisan config:cache
 
 # Queue management
-docker-compose exec {PROJECT_NAME}-php php artisan queue:work
-docker-compose exec {PROJECT_NAME}-php php artisan queue:restart
+docker compose exec {PROJECT_NAME}-php php artisan queue:work
+docker compose exec {PROJECT_NAME}-php php artisan queue:restart
 ```
 
 **Package Management:**
 ```bash
 # Composer operations
-docker-compose exec {PROJECT_NAME}-php composer install
-docker-compose exec {PROJECT_NAME}-php composer update
-docker-compose exec {PROJECT_NAME}-php composer dump-autoload -o
+docker compose exec {PROJECT_NAME}-php composer install
+docker compose exec {PROJECT_NAME}-php composer update
+docker compose exec {PROJECT_NAME}-php composer dump-autoload -o
 
 # NPM operations (Vite dev server runs automatically via entrypoint)
-docker-compose exec {PROJECT_NAME}-php npm install
-docker-compose exec {PROJECT_NAME}-php npm run build
-docker-compose exec {PROJECT_NAME}-php npm run dev
+docker compose exec {PROJECT_NAME}-php npm install
+docker compose exec {PROJECT_NAME}-php npm run build
+docker compose exec {PROJECT_NAME}-php npm run dev
 ```
 
 **Debugging and Logs:**
 ```bash
 # View logs
-docker-compose logs -f {PROJECT_NAME}-php
-docker-compose logs -f {PROJECT_NAME}-nginx
-docker-compose logs -f {PROJECT_NAME}-postgres
+docker compose logs -f {PROJECT_NAME}-php
+docker compose logs -f {PROJECT_NAME}-nginx
+docker compose logs -f {PROJECT_NAME}-postgres
 
 # Container management
-docker-compose restart {PROJECT_NAME}-php
-docker-compose exec {PROJECT_NAME}-php bash
+docker compose restart {PROJECT_NAME}-php
+docker compose exec {PROJECT_NAME}-php bash
 ```
 
 ## Template Processing System

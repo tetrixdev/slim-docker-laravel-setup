@@ -34,39 +34,11 @@ RUN mkdir -p /var/www/storage/framework/{sessions,views,cache} \
 WORKDIR /var/www
 
 # =============================================================================
-# PRODUCTION SECTION (production-specific configuration and optimization)
+# LOCAL DEVELOPMENT SECTION (development-specific configuration)
 # =============================================================================
-
-# Copy Laravel application
-COPY www/ /var/www/
-
-# Install Composer dependencies (production optimized)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --verbose
-
-# Install npm dependencies and build assets
-RUN npm ci --only=production \
-    && npm run build \
-    && rm -rf node_modules
-
-# Create storage symlink
-RUN php artisan storage:link --no-interaction
-
-# Copy PHP configuration
-COPY docker/shared/php/local.ini /usr/local/etc/php/conf.d/local.ini
-
-# Copy production entrypoint
-COPY docker/production/php/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-# Set proper permissions
-RUN chown -R www-data:www-data /var/www
-
-# Switch to www-data user for security
-USER www-data
 
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
 
-# Use production entrypoint
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["php-fpm"]
+# Development uses volumes for hot-reloading, so no need to copy files
+# The entrypoint and application code are mounted via docker compose volumes

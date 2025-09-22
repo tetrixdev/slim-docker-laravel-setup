@@ -2,7 +2,7 @@ services:
   {{PROJECT_NAME}}-php:
     build:
       context: .
-      dockerfile: docker/local/php/Dockerfile
+      dockerfile: docker-laravel/local/php/Dockerfile
     container_name: {{PROJECT_NAME}}-php
     restart: unless-stopped
     working_dir: /var/www
@@ -12,8 +12,8 @@ services:
     volumes:
       - ./{{LARAVEL_DIR}}:/var/www
       - .env:/var/www/.env
-      - ./docker/shared/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-      - ./docker/local/php/entrypoint.sh:/entrypoint.sh
+      - ./docker-laravel/shared/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./docker-laravel/local/php/entrypoint.sh:/entrypoint.sh
     networks:
       - {{PROJECT_NAME}}
     depends_on:
@@ -34,7 +34,7 @@ services:
       - "${NGINX_PORT:-80}:80"
     volumes:
       - ./{{LARAVEL_DIR}}:/var/www
-      - ./docker/shared/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./docker-laravel/shared/nginx/default.conf:/etc/nginx/conf.d/default.conf
     networks:
       - {{PROJECT_NAME}}
     depends_on:

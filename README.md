@@ -28,9 +28,35 @@ curl -L https://github.com/tetrixdev/slim-docker-laravel-setup/archive/main.tar.
 ./setup.sh
 
 # Start containers
-docker-compose up -d
+docker compose up -d
 
 # Your app is ready at http://localhost
+```
+
+## Setup Script Options
+
+The setup script supports both interactive and non-interactive modes:
+
+```bash
+# Interactive setup (prompts for values)
+./setup.sh
+
+# Non-interactive setup with all parameters
+./setup.sh -n myapp -u https://myapp.com -o myusername
+
+# Auto-detect GitHub owner without prompting
+./setup.sh -n myapp -u https://myapp.com -a
+
+# Mixed: provide some parameters, prompt for others
+./setup.sh -n myapp
+
+# Available options:
+#   -n, --project-name NAME     Set project name (lowercase, no spaces)
+#   -u, --production-url URL    Set production URL for .env.production
+#   -o, --github-owner OWNER    Set GitHub repository owner manually
+#   -a, --auto-detect-owner     Auto-accept detected GitHub owner (no prompt)
+#   -h, --help                  Show help message
+#   --check                     Check prerequisites only
 ```
 
 ## Existing Project Setup
@@ -45,7 +71,7 @@ curl -L https://github.com/tetrixdev/slim-docker-laravel-setup/archive/main.tar.
 ./setup.sh
 
 # Start containers
-docker-compose up -d
+docker compose up -d
 
 # Your app is ready at http://localhost
 ```
@@ -56,30 +82,28 @@ For testing this Docker setup locally during development:
 
 ### Setup Test Project
 ```bash
-mkdir ~/projects/test-project
-cd ~/projects/test-project
+mkdir test-project
 
 # Install Laravel
-composer create-project laravel/laravel www
+composer create-project laravel/laravel test-project/www
 
-# Copy Docker setup from your local development directory (including dotfiles)
-cp -r ./../slim-docker-laravel-setup/. .
+# Copy Docker setup from template directory
+cp -r template/* template/.* test-project/ 2>/dev/null || cp -r template/* test-project/
 
-# Run setup
-./setup.sh
+# Or run non-interactive setup
+(cd test-project ; ./setup.sh -n test-project -u https://test-project.com -o test-git-username)
 
 # Start containers
-docker-compose up -d
+(cd test-project ; docker compose up -d)
 ```
 
 ### Cleanup Test Environment
 ```bash
-cd ~/projects/test-project
-
 # Stop and remove containers, networks, and volumes
-docker-compose down -v
+(cd test-project && docker compose down -v)
 
-sudo rm -rf ~/projects/test-project/
+# Remove test project directory
+sudo rm -rf test-project/
 ```
 
 ## Project Structure
@@ -187,33 +211,33 @@ NGINX_PORT=80
 
 ### Start Services
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Stop Services
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### View Logs
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Specific service
-docker-compose logs -f your-project-php
+docker compose logs -f your-project-php
 ```
 
 ### Execute Commands in PHP Container
 ```bash
 # Laravel Artisan
-docker-compose exec your-project-php php artisan migrate
+docker compose exec your-project-php php artisan migrate
 
 # Composer
-docker-compose exec your-project-php composer install
+docker compose exec your-project-php composer install
 
 # npm
-docker-compose exec your-project-php npm install
+docker compose exec your-project-php npm install
 ```
 
 ### Switch to Production
@@ -222,7 +246,7 @@ docker-compose exec your-project-php npm install
 cp docker/production/.env.example .env
 # Update database password to secure value
 sed -i "s/CHANGE_THIS_PASSWORD/your-secure-password/" .env
-docker-compose restart
+docker compose restart
 ```
 
 ## Development Workflow
@@ -230,23 +254,23 @@ docker-compose restart
 1. **Start development environment**:
    ```bash
    # .env is already set up for development
-   docker-compose up -d
+   docker compose up -d
    ```
 
 2. **Install dependencies** (if needed):
    ```bash
-   docker-compose exec your-project-php composer install
-   docker-compose exec your-project-php npm install
+   docker compose exec your-project-php composer install
+   docker compose exec your-project-php npm install
    ```
 
 3. **Run migrations**:
    ```bash
-   docker-compose exec your-project-php php artisan migrate
+   docker compose exec your-project-php php artisan migrate
    ```
 
 4. **Generate application key** (if needed):
    ```bash
-   docker-compose exec your-project-php php artisan key:generate
+   docker compose exec your-project-php php artisan key:generate
    ```
 
 5. **Access your application** at `http://localhost`
@@ -291,12 +315,12 @@ PostgreSQL data is stored in a named Docker volume `postgres-data` for persisten
 # Switch to production
 cp docker/production/.env.example .env
 sed -i "s/CHANGE_THIS_PASSWORD/your-secure-password/" .env
-docker-compose restart
+docker compose restart
 
 # Switch back to development
 cp .env.example .env
 sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(tr -dc 'A-Za-z0-9@#%^&*()_+-=' < /dev/urandom | head -c 32)/" .env
-docker-compose restart
+docker compose restart
 ```
 
 ## Production Deployment
@@ -331,10 +355,10 @@ The `docker/production/` folder contains everything needed for production deploy
 3. **Deploy using pre-built images**:
    ```bash
    # Deploy latest version
-   docker-compose up -d
+   docker compose up -d
    
    # Deploy specific version
-   IMAGE_TAG=v1.0.0 docker-compose up -d
+   IMAGE_TAG=v1.0.0 docker compose up -d
    ```
 
 3. **Production benefits**:
@@ -349,22 +373,22 @@ The `docker/production/` folder contains everything needed for production deploy
 
 **Laravel Storage Permissions:**
 ```bash
-docker-compose exec {PROJECT_NAME}-php chown -R www-data:www-data storage bootstrap/cache
-docker-compose exec {PROJECT_NAME}-php chmod -R 775 storage bootstrap/cache
+docker compose exec {PROJECT_NAME}-php chown -R www-data:www-data storage bootstrap/cache
+docker compose exec {PROJECT_NAME}-php chmod -R 775 storage bootstrap/cache
 ```
 
 **Database Connection Problems:**
-- Check containers are running: `docker-compose ps`
+- Check containers are running: `docker compose ps`
 - Verify credentials in `.env` file
-- Restart PostgreSQL: `docker-compose restart {PROJECT_NAME}-postgres`
+- Restart PostgreSQL: `docker compose restart {PROJECT_NAME}-postgres`
 
 **Nginx 502 Bad Gateway:**
-- Check PHP-FPM logs: `docker-compose logs {PROJECT_NAME}-php`
-- Restart PHP container: `docker-compose restart {PROJECT_NAME}-php`
+- Check PHP-FPM logs: `docker compose logs {PROJECT_NAME}-php`
+- Restart PHP container: `docker compose restart {PROJECT_NAME}-php`
 
 **Vite Development Server Issues:**
-- Check Vite is running: `docker-compose logs {PROJECT_NAME}-php | grep vite`
-- Manually start: `docker-compose exec {PROJECT_NAME}-php npm run dev`
+- Check Vite is running: `docker compose logs {PROJECT_NAME}-php | grep vite`
+- Manually start: `docker compose exec {PROJECT_NAME}-php npm run dev`
 
 ## Advanced Configuration
 
