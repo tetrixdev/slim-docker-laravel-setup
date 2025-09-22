@@ -24,10 +24,10 @@ This folder contains everything needed to deploy **{{PROJECT_NAME}}** to product
 3. **Deploy with pre-built images**:
    ```bash
    # Deploy latest version
-   docker-compose up -d
+   docker compose up -d
    
    # Deploy specific version
-   IMAGE_TAG=v1.0.0 docker-compose up -d
+   IMAGE_TAG=v1.0.0 docker compose up -d
    ```
 
 ## What's Included
@@ -65,19 +65,19 @@ DB_PORT=5432
 
 ```bash
 # Start services
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop services
-docker-compose down
+docker compose down
 
 # Update to latest version
-docker-compose pull && docker-compose up -d
+docker compose pull && docker compose up -d
 
 # Deploy specific version
-IMAGE_TAG=v1.2.0 docker-compose up -d
+IMAGE_TAG=v1.2.0 docker compose up -d
 ```
 
 ## Health Checks
@@ -86,25 +86,25 @@ All services include health checks. Monitor with:
 
 ```bash
 # Check service health
-docker-compose ps
+docker compose ps
 
 # View container logs
-docker-compose logs {{PROJECT_NAME}}-php
-docker-compose logs {{PROJECT_NAME}}-nginx
-docker-compose logs {{PROJECT_NAME}}-postgres
+docker compose logs {{PROJECT_NAME}}-php
+docker compose logs {{PROJECT_NAME}}-nginx
+docker compose logs {{PROJECT_NAME}}-postgres
 ```
 
 ## Database Management
 
 ```bash
 # Run migrations
-docker-compose exec {{PROJECT_NAME}}-php php artisan migrate --force
+docker compose exec {{PROJECT_NAME}}-php php artisan migrate --force
 
 # Clear caches
-docker-compose exec {{PROJECT_NAME}}-php php artisan optimize:clear
+docker compose exec {{PROJECT_NAME}}-php php artisan optimize:clear
 
 # Access database
-docker-compose exec {{PROJECT_NAME}}-postgres psql -U {{PROJECT_NAME}} -d {{PROJECT_NAME}}
+docker compose exec {{PROJECT_NAME}}-postgres psql -U {{PROJECT_NAME}} -d {{PROJECT_NAME}}
 ```
 
 ## SSL/HTTPS Setup
@@ -127,12 +127,12 @@ your-domain.com {
 
 **Container won't start:**
 ```bash
-docker-compose logs service-name
+docker compose logs service-name
 ```
 
 **Database connection issues:**
 - Check `DB_*` variables in `.env`
-- Ensure PostgreSQL container is healthy: `docker-compose ps`
+- Ensure PostgreSQL container is healthy: `docker compose ps`
 
 **Image pull failures:**
 - Ensure you have access to `ghcr.io/{{GITHUB_REPOSITORY_OWNER}}/{{PROJECT_NAME}}-*`
@@ -147,6 +147,6 @@ docker-compose logs service-name
 
 ## Support
 
-- Check application logs: `docker-compose logs {{PROJECT_NAME}}-php`
-- Review Laravel logs: `docker-compose exec {{PROJECT_NAME}}-php tail -f storage/logs/laravel.log`
-- Database logs: `docker-compose logs {{PROJECT_NAME}}-postgres`
+- Check application logs: `docker compose logs {{PROJECT_NAME}}-php`
+- Review Laravel logs: `docker compose exec {{PROJECT_NAME}}-php tail -f storage/logs/laravel.log`
+- Database logs: `docker compose logs {{PROJECT_NAME}}-postgres`
