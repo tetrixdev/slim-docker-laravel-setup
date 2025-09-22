@@ -22,7 +22,7 @@ Create an empty folder with your desired project name, then copy and paste this:
 composer create-project laravel/laravel www
 
 # Download Docker setup
-curl -L https://github.com/tetrixdev/slim-docker-laravel-setup/archive/main.tar.gz | tar -xz --strip-components=1
+curl -L https://github.com/tetrixdev/slim-docker-laravel-setup/archive/main.tar.gz | tar -xz --wildcards --strip-components=2 "*/template/*"
 
 # Run setup (will prompt for project name and production URL)
 ./setup.sh
@@ -65,7 +65,7 @@ Navigate to your existing Laravel project root directory, then copy and paste th
 
 ```bash
 # Download Docker setup
-curl -L https://github.com/tetrixdev/slim-docker-laravel-setup/archive/main.tar.gz | tar -xz --strip-components=1
+curl -L https://github.com/tetrixdev/slim-docker-laravel-setup/archive/main.tar.gz | tar -xz --wildcards --strip-components=2 "*/template/*"
 
 # Run setup (will automatically move Laravel files to www/ folder)
 ./setup.sh
