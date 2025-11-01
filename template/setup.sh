@@ -236,7 +236,7 @@ setup_laravel_docker() {
     # Process docker-laravel/production/.env.example
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" docker-laravel/production/.env.example
     sed -i "s#{{PRODUCTION_URL}}#$PRODUCTION_URL#g" docker-laravel/production/.env.example
-    sed -i "s/DB_PASSWORD=/DB_PASSWORD=CHANGE_THIS_PASSWORD/" docker-laravel/production/.env.example
+    # Note: DB_PASSWORD is left empty - must be set manually before production deployment
     
     # Process production deployment README
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{GITHUB_REPOSITORY_OWNER}}/$GITHUB_REPOSITORY_OWNER/g" docker-laravel/production/README.md
