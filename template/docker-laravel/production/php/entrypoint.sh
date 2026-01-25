@@ -1,7 +1,14 @@
 #!/bin/bash
 set -e
 
-echo "Starting Laravel production container..."
+echo "=== slim-docker-laravel-setup v0.1.0 ==="
+echo "Starting production environment..."
+
+# =============================================================================
+# LARAVEL SETUP
+# =============================================================================
+
+cd /var/www
 
 # Generate Laravel application key if not set
 if [ -f ".env" ] && ! grep -q "^APP_KEY=.\+" .env; then
@@ -17,8 +24,11 @@ php artisan route:cache --no-interaction
 php artisan view:cache --no-interaction
 php artisan queue:restart --no-interaction
 
-echo "Laravel application ready for production"
-echo "Starting PHP-FPM..."
+echo "=== Laravel setup complete ==="
 
-# Start PHP-FPM
-exec php-fpm
+# =============================================================================
+# START SUPERVISOR
+# =============================================================================
+
+echo "Starting supervisor (php-fpm + queue worker + scheduler)..."
+exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
