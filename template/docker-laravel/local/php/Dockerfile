@@ -37,8 +37,16 @@ WORKDIR /var/www
 # LOCAL DEVELOPMENT SECTION (development-specific configuration)
 # =============================================================================
 
+# Copy entrypoint script
+COPY docker-laravel/local/php/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
 
-# Development uses volumes for hot-reloading, so no need to copy files
-# The entrypoint and application code are mounted via docker compose volumes
+# Switch to www-data for security
+USER www-data
+
+# Set entrypoint and default command
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["php-fpm"]
