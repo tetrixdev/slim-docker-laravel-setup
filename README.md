@@ -334,7 +334,7 @@ Services communicate via Docker's internal network:
 ### Health Checks
 All containers have health checks configured:
 - PHP-FPM: `php-fpm -t`
-- Nginx: `curl -f http://localhost:80/`
+- Nginx: `wget -q -O /dev/null http://localhost:80/`
 - PostgreSQL: `pg_isready`
 - Redis: `redis-cli ping`
 
