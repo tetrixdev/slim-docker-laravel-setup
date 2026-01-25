@@ -214,7 +214,17 @@ setup_laravel_docker() {
     
     # Copy and process GitHub Action workflow
     print_info "Setting up GitHub Action workflow..."
-    # .github directory is already at template root, no need to copy from docker/local
+    if [ ! -f ".github/workflows/docker-laravel.yml" ]; then
+        print_error "GitHub workflow not found (.github/workflows/docker-laravel.yml)"
+        print_info ""
+        print_info "This usually means the template was not installed correctly."
+        print_info "Please use the documented installation method:"
+        print_info ""
+        print_info "  curl -L https://github.com/tetrixdev/slim-docker-laravel-setup/archive/main.tar.gz | tar -xz --wildcards --strip-components=2 \"*/template/*\""
+        print_info ""
+        print_info "Note: 'cp -r template/*' does NOT copy hidden folders like .github"
+        exit 1
+    fi
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{GITHUB_REPOSITORY_OWNER}}/$GITHUB_REPOSITORY_OWNER/g" .github/workflows/docker-laravel.yml
     print_success "GitHub Action workflow configured"
     
