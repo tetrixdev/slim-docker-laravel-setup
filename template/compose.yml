@@ -6,7 +6,6 @@ services:
     container_name: {{PROJECT_NAME}}-php
     restart: unless-stopped
     working_dir: /var/www
-    entrypoint: ["/entrypoint.sh"]
     ports:
       - "${VITE_PORT:-5173}:5173"
     volumes:
