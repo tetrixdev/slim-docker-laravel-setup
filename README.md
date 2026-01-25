@@ -348,7 +348,10 @@ The PHP container's entrypoint script automatically:
 - Starts Supervisor (which manages php-fpm, Vite, queue, and scheduler)
 
 ### Data Persistence
-PostgreSQL data is stored in a named Docker volume `postgres-data` for persistence across container restarts.
+- **PostgreSQL**: Data stored in named volume `postgres-data` (`/var/lib/postgresql/data`)
+- **Redis**: Data stored in named volume `redis-data` (`/data`)
+
+Both volumes persist across container restarts and rebuilds.
 
 ## Environment Management
 
