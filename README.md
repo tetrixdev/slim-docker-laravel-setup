@@ -447,7 +447,7 @@ max_execution_time=120
 Edit `docker/shared/nginx/default.conf` for custom Nginx settings.
 
 ### Additional Services
-Add services like Redis, Memcached, or Elasticsearch by extending the `compose.yml`.
+Redis is included by default. Add additional services like Memcached or Elasticsearch by extending the `compose.yml`.
 
 ## Contributing
 
