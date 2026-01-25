@@ -7,52 +7,93 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v4
         name: Checkout the files
 
-      # Set up Docker Buildx for caching support
+      # Pre-build: Install dependencies in runner for better caching
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+        working-directory: www
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: www/package-lock.json
+
+      - name: Install npm dependencies and build
+        run: |
+          npm ci
+          npm run build
+          rm -rf node_modules
+        working-directory: www
+
+      # Docker build
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Login to GitHub Container Registry
-      - name: Login to container registry
+      - name: Login to GitHub Container Registry
         run: docker login ghcr.io --username=${{ github.actor }} --password=${{ secrets.GITHUB_TOKEN }}
 
-      # Build and push Laravel PHP application image using production Dockerfile
-      - name: Build and push {{PROJECT_NAME}}-php image
+      - name: Build and push PHP image
         run: |
+          TAGS="--tag ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:${{ github.event.release.tag_name }}"
+          # Only update :latest for full releases, not prereleases
+          if [ "${{ github.event.release.prerelease }}" != "true" ]; then
+            TAGS="$TAGS --tag ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:latest"
+          fi
           docker buildx build \
-            --file docker/production/php/Dockerfile \
+            --file docker-laravel/production/php/Dockerfile \
             --progress plain \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from=type=registry,ref=ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:cache \
             --cache-to=type=registry,ref=ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:cache,mode=max \
-            --tag ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:${{ github.event.release.tag_name }} \
-            --tag ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:latest \
+            $TAGS \
             --push \
             .
 
-      # Build and push Laravel Nginx image
-      - name: Build and push {{PROJECT_NAME}}-nginx image
+      - name: Build and push Nginx image
         run: |
+          TAGS="--tag ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:${{ github.event.release.tag_name }}"
+          if [ "${{ github.event.release.prerelease }}" != "true" ]; then
+            TAGS="$TAGS --tag ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:latest"
+          fi
           docker buildx build \
-            --file docker/production/nginx/Dockerfile \
+            --file docker-laravel/production/nginx/Dockerfile \
             --progress plain \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from=type=registry,ref=ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:cache \
             --cache-to=type=registry,ref=ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:cache,mode=max \
-            --tag ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:${{ github.event.release.tag_name }} \
-            --tag ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:latest \
+            $TAGS \
             --push \
             .
 
-      # Output image information
-      - name: Image build complete
+      - name: Summary
         run: |
-          echo "✅ Images built and pushed:"
-          echo "📦 ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:${{ github.event.release.tag_name }}"
-          echo "📦 ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:${{ github.event.release.tag_name }}"
-          echo ""
-          echo "🚀 Deploy with: cd docker/production && docker-compose up -d"
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Images pushed:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-php:${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository_owner }}/{{PROJECT_NAME}}-nginx:${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.release.prerelease }}" = "true" ]; then
+            echo ":warning: **Prerelease**: \`:latest\` tag NOT updated" >> $GITHUB_STEP_SUMMARY
+          else
+            echo ":white_check_mark: \`:latest\` tag updated" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deploy:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "cd deploy && docker compose up -d" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

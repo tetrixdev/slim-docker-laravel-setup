@@ -4,13 +4,16 @@ A lightweight, production-ready Docker setup for Laravel applications with PHP 8
 
 ## Features
 
-- 🐘 **PHP 8.4-FPM** with PostgreSQL, Composer, and Node.js 22 LTS
-- 🌐 **Nginx 1.29** optimized for Laravel
+- 🐘 **PHP 8.4-FPM** with PostgreSQL, Redis, Composer, and Node.js 22 LTS
+- 🌐 **Nginx 1.27** optimized for Laravel
 - 🗄️ **PostgreSQL 17** with persistent data storage
-- 🔥 **Vite Dev Server** with hot reload support
+- 🔴 **Redis 7** for caching, sessions, and queues
+- 🔥 **Vite Dev Server** with hot reload support (managed by Supervisor)
+- ⚡ **Queue Worker** - `queue:listen` (dev) / `queue:work` (prod)
+- 📅 **Scheduler** - `schedule:work` for sub-minute scheduling
 - 🔧 **Health checks** for all services
 - 📦 **One-command setup** for new and existing projects
-- 🔄 **Environment management** (development/production)
+- 🔄 **Configurable ports** for running multiple projects
 - 🚀 **Production-ready** configuration
 
 ## New Project Setup
@@ -168,15 +171,37 @@ No Laravel configuration changes are required! The setup automatically handles:
 - **Vite Dev Server**: 5173
 
 ### Nginx Container
-- **Image**: nginx:1.29-alpine
+- **Image**: nginx:1.27-alpine
 - **Port**: 80 (configurable via `NGINX_PORT`)
 - **Configuration**: Optimized for Laravel
 
 ### PostgreSQL Container
 - **Image**: postgres:17-alpine
-- **Port**: 5432 (configurable via `DB_PORT`)
+- **Port**: 5433 external, 5432 internal (configurable via `DB_EXTERNAL_PORT`)
 - **Data**: Persistent volume storage
 - **Credentials**: Configurable via environment variables
+
+### Redis Container
+- **Image**: redis:7-alpine
+- **Port**: 6379 (internal only)
+- **Data**: Persistent volume storage
+- **Use**: Caching, sessions, and queue backend
+
+## Running Multiple Projects
+
+To run multiple projects simultaneously, change the ports in `.env`:
+
+```env
+# Project A (defaults)
+NGINX_PORT=80
+VITE_PORT=5173
+DB_EXTERNAL_PORT=5433
+
+# Project B
+NGINX_PORT=8080
+VITE_PORT=5174
+DB_EXTERNAL_PORT=5434
+```
 
 ## Environment Variables
 
@@ -190,8 +215,17 @@ DB_HOST=your-project-postgres
 DB_DATABASE=your-project
 DB_USERNAME=your-project
 DB_PASSWORD=generated-secure-password
+
+# Redis configuration
+REDIS_HOST=your-project-redis
+CACHE_DRIVER=redis
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+
+# Docker ports (change for multiple projects)
 NGINX_PORT=80
 VITE_PORT=5173
+DB_EXTERNAL_PORT=5433
 ```
 
 ### Production (docker/production/.env.example)
@@ -278,35 +312,46 @@ docker compose restart
 ## Architecture
 
 ### Container Stack
-- **PHP-FPM Container**: PHP 8.4-FPM with PostgreSQL extensions, Composer, and Node.js 22 LTS
-- **Nginx Container**: nginx:1.29-alpine configured for Laravel routing  
+- **PHP Container**: PHP 8.4-FPM with Supervisor managing php-fpm, Vite, queue worker, and scheduler
+- **Nginx Container**: nginx:1.27-alpine configured for Laravel routing
 - **PostgreSQL Container**: postgres:17-alpine with persistent data storage
+- **Redis Container**: redis:7-alpine for caching, sessions, and queues
+
+### Supervisor-Managed Processes (in PHP container)
+- `php-fpm` - PHP FastCGI Process Manager
+- `npm-dev` - Vite dev server with HMR (local only)
+- `queue-worker` - Laravel queue:listen (local) or queue:work (production)
+- `scheduler` - Laravel schedule:work for sub-minute scheduling
 
 ### Container Networking
 Services communicate via Docker's internal network:
 - PHP-FPM: accessible internally on port 9000
-- PostgreSQL: accessible internally on port 5432  
+- PostgreSQL: accessible internally on port 5432
+- Redis: accessible internally on port 6379
 - Nginx: exposed on configurable port (default 80)
 - Vite dev server: exposed on configurable port (default 5173)
 
 ### Health Checks
 All containers have health checks configured:
 - PHP-FPM: `php-fpm -t`
-- Nginx: `curl -f http://localhost:80/`
+- Nginx: `wget -q -O /dev/null http://localhost:80/`
 - PostgreSQL: `pg_isready`
+- Redis: `redis-cli ping`
 
 ### Automated Container Initialization
 The PHP container's entrypoint script automatically:
 - Sets proper file permissions for Laravel storage
+- Installs composer and npm dependencies
 - Generates APP_KEY if missing
 - Creates storage symlink
-- Installs npm dependencies  
-- Starts Vite dev server in background
-- Runs composer install and Laravel optimization commands
-- Executes database migrations
+- Runs Laravel migrations and optimization commands
+- Starts Supervisor (which manages php-fpm, Vite, queue, and scheduler)
 
 ### Data Persistence
-PostgreSQL data is stored in a named Docker volume `postgres-data` for persistence across container restarts.
+- **PostgreSQL**: Data stored in named volume `postgres-data` (`/var/lib/postgresql/data`)
+- **Redis**: Data stored in named volume `redis-data` (`/data`)
+
+Both volumes persist across container restarts and rebuilds.
 
 ## Environment Management
 
@@ -405,7 +450,7 @@ max_execution_time=120
 Edit `docker/shared/nginx/default.conf` for custom Nginx settings.
 
 ### Additional Services
-Add services like Redis, Memcached, or Elasticsearch by extending the `compose.yml`.
+Redis is included by default. Add additional services like Memcached or Elasticsearch by extending the `compose.yml`.
 
 ## Contributing
 
