@@ -8,7 +8,7 @@ Check `SLIM_DOCKER_VERSION` in `.env` or look for version comments in Dockerfile
 
 ## Structure
 
-```
+```text
 docker-laravel/
 ├── local/           # Local development configs
 │   ├── php/         # PHP Dockerfile, entrypoint, supervisor configs

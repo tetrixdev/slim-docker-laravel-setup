@@ -18,7 +18,7 @@ fi
 
 # Run Laravel production optimizations
 echo "Running Laravel optimizations..."
-php artisan migrate --force --no-interaction
+php artisan migrate --force --isolated --no-interaction
 php artisan config:cache --no-interaction
 php artisan route:cache --no-interaction
 php artisan view:cache --no-interaction

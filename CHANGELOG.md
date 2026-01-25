@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### From previous versions to 0.1.0
 
 1. **Add new files:**
-   ```
+   ```text
    docker-laravel/shared/supervisor/supervisord.conf
    docker-laravel/local/php/supervisor/*.conf
    docker-laravel/production/php/supervisor/*.conf

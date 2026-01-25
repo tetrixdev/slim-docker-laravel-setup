@@ -171,7 +171,7 @@ No Laravel configuration changes are required! The setup automatically handles:
 - **Vite Dev Server**: 5173
 
 ### Nginx Container
-- **Image**: nginx:1.29-alpine
+- **Image**: nginx:1.27-alpine
 - **Port**: 80 (configurable via `NGINX_PORT`)
 - **Configuration**: Optimized for Laravel
 

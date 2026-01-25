@@ -26,7 +26,6 @@ cd /var/www
 # Install composer dependencies
 echo "Installing composer dependencies..."
 composer install
-composer dump-autoload -o
 
 # Generate Laravel application key if not set
 if [ -f ".env" ] && ! grep -q "^APP_KEY=.\+" .env; then
@@ -50,7 +49,6 @@ fi
 echo "Running Laravel setup..."
 php artisan migrate --force
 php artisan optimize:clear
-php artisan config:cache
 php artisan queue:restart
 
 echo "=== Laravel setup complete ==="
