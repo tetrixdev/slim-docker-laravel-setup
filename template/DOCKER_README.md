@@ -76,9 +76,37 @@ docker compose exec {{PROJECT_NAME}}-postgres psql -U {{PROJECT_NAME}} -d {{PROJ
 
 ## Ports
 
-- **Web**: http://localhost:8080
-- **Vite Dev Server**: http://localhost:5173
-- **PostgreSQL**: localhost:5432
+Ports are configurable in `.env`:
+
+| Service    | Default Port | .env Variable    |
+|------------|--------------|------------------|
+| Web (Nginx)| 80           | `NGINX_PORT`     |
+| Vite HMR   | 5173         | `VITE_PORT`      |
+| PostgreSQL | 5433         | `DB_EXTERNAL_PORT` |
+
+Example for running multiple projects:
+```bash
+# .env
+NGINX_PORT=8081
+VITE_PORT=5174
+DB_EXTERNAL_PORT=5434
+```
+
+## External/Mobile Access
+
+To access your app from mobile devices or other machines on the network:
+
+1. Set `APP_URL` in `.env` to your machine's IP:
+   ```bash
+   APP_URL=http://192.168.1.100
+   ```
+
+2. Restart containers:
+   ```bash
+   docker compose restart
+   ```
+
+The Vite config automatically uses `APP_URL` for HMR, so hot-reload works on external devices.
 
 ## Troubleshooting
 
@@ -98,5 +126,6 @@ docker compose logs {{PROJECT_NAME}}-php
 - Check if PostgreSQL container is healthy: `docker compose ps`
 
 ### Vite HMR Not Working
-- Ensure port 5173 is not blocked
-- Check Vite config includes Docker settings
+- Ensure VITE_PORT is not blocked by firewall
+- For external access, verify `APP_URL` is set to your machine's IP (not localhost)
+- Check Vite logs: `docker compose logs {{PROJECT_NAME}}-php | grep vite`
