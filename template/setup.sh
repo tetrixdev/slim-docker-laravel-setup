@@ -256,22 +256,12 @@ setup_laravel_docker() {
 
     print_success "Production deployment package created in docker-laravel/production/"
     
-    # Configure Vite for Docker if needed
+    # Configure Vite for Docker
+    # Replace vite.config.js with Docker-ready template that uses APP_URL for HMR
     if [ -f "$LARAVEL_DIR/vite.config.js" ]; then
         print_info "Configuring Vite for Docker..."
-        if ! grep -q "server:" "$LARAVEL_DIR/vite.config.js"; then
-            # Add server configuration for Docker before the closing brace
-            sed -i '/^});$/i\    server: {\
-        host: '\''0.0.0.0'\'',\
-        port: 5173,\
-        hmr: {\
-            host: '\''localhost'\'',\
-        },\
-    },' "$LARAVEL_DIR/vite.config.js"
-            print_success "Vite configured for Docker (server block added)"
-        else
-            print_info "Vite server configuration already exists, skipping"
-        fi
+        cp docker-laravel/shared/vite.config.js "$LARAVEL_DIR/vite.config.js"
+        print_success "Vite configured for Docker (using APP_URL for HMR)"
     fi
     
     # Clean up setup script after successful completion

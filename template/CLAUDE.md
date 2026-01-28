@@ -52,6 +52,14 @@ All ports configurable via `.env`:
 
 Change these when running multiple projects simultaneously.
 
+## Vite HMR Configuration
+
+The `vite.config.js` reads `APP_URL` to configure HMR for external/mobile access:
+- `APP_URL=http://localhost` - HMR works only on localhost
+- `APP_URL=http://192.168.1.100` - HMR works from any device on the network
+
+This enables testing on mobile devices during development.
+
 ## Supervisor Processes
 
 Local dev runs via supervisor (PID 1):

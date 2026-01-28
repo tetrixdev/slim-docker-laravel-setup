@@ -159,7 +159,7 @@ your-laravel-project/
 No Laravel configuration changes are required! The setup automatically handles:
 
 - **Database configuration**: Uses environment variables that work with Laravel's default `config/database.php`
-- **Vite configuration**: Automatically adds Docker-compatible server settings to `vite.config.js` for hot reload support
+- **Vite configuration**: Replaces `vite.config.js` with Docker-ready config that uses `APP_URL` for HMR (supports external/mobile access)
 
 ## Services
 
