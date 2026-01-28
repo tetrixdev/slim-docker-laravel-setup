@@ -78,11 +78,11 @@ docker compose exec {{PROJECT_NAME}}-postgres psql -U {{PROJECT_NAME}} -d {{PROJ
 
 Ports are configurable in `.env`:
 
-| Service    | Default Port | .env Variable    |
-|------------|--------------|------------------|
-| Web (Nginx)| 80           | `NGINX_PORT`     |
-| Vite HMR   | 5173         | `VITE_PORT`      |
-| PostgreSQL | 5433         | `DB_EXTERNAL_PORT` |
+| Service     | Default Port | .env Variable       |
+| ----------- | ------------ | ------------------- |
+| Web (Nginx) | 80           | `NGINX_PORT`        |
+| Vite HMR    | 5173         | `VITE_PORT`         |
+| PostgreSQL  | 5433         | `DB_EXTERNAL_PORT`  |
 
 Example for running multiple projects:
 ```bash
