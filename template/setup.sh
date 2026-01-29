@@ -245,8 +245,12 @@ setup_laravel_docker() {
     sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)/" .env
 
     # Generate Laravel APP_KEY using openssl (persists across container recreates)
+    if ! command_exists openssl; then
+        print_error "openssl is required to generate APP_KEY. Please install it and re-run setup."
+        exit 1
+    fi
     APP_KEY="base64:$(openssl rand -base64 32)"
-    sed -i "s/APP_KEY=/APP_KEY=$APP_KEY/" .env
+    sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
     print_success "Application key generated"
 
     # Set development APP_URL if provided (for Vite HMR on external devices)
