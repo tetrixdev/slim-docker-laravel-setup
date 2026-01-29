@@ -11,6 +11,7 @@ NC='\033[0m' # No Color
 # Command line parameter variables
 PARAM_PROJECT_NAME=""
 PARAM_PRODUCTION_URL=""
+PARAM_DEV_URL=""
 PARAM_GITHUB_OWNER=""
 PARAM_AUTO_DETECT=false
 
@@ -239,9 +240,24 @@ setup_laravel_docker() {
     # Update .env.example with project-specific values
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" .env.example
     
-    # Create .env from .env.example with generated password
+    # Create .env from .env.example with generated password and app key
     cp .env.example .env
     sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)/" .env
+
+    # Generate Laravel APP_KEY using openssl (persists across container recreates)
+    if ! command_exists openssl; then
+        print_error "openssl is required to generate APP_KEY. Please install it and re-run setup."
+        exit 1
+    fi
+    APP_KEY="base64:$(openssl rand -base64 32)"
+    sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+    print_success "Application key generated"
+
+    # Set development APP_URL if provided (for Vite HMR on external devices)
+    if [[ -n "$PARAM_DEV_URL" ]]; then
+        sed -i "s|APP_URL=http://localhost|APP_URL=$PARAM_DEV_URL|" .env
+        print_success "Development APP_URL set to $PARAM_DEV_URL"
+    fi
 
     # Process docker-laravel/production/.env.example
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" docker-laravel/production/.env.example
@@ -299,6 +315,7 @@ usage() {
     echo "Options:"
     echo "  -n, --project-name NAME     Set project name (lowercase, no spaces)"
     echo "  -u, --production-url URL    Set production URL for .env.production"
+    echo "  -d, --dev-url URL           Set development APP_URL (for Vite HMR on external devices)"
     echo "  -o, --github-owner OWNER    Set GitHub repository owner manually"
     echo "  -a, --auto-detect-owner     Auto-accept detected GitHub owner (no prompt)"
     echo "  -h, --help                  Show this help message"
@@ -313,6 +330,9 @@ usage() {
     echo ""
     echo "  # Auto-detect GitHub owner without prompting"
     echo "  $0 -n myapp -u https://myapp.com -a"
+    echo ""
+    echo "  # Setup for external device access (e.g., mobile testing via Tailscale)"
+    echo "  $0 -n myapp -u https://myapp.com -d http://100.64.0.1 -a"
     echo ""
     echo "  # Mixed: provide some parameters, prompt for others"
     echo "  $0 -n myapp"
@@ -333,6 +353,15 @@ while [[ $# -gt 0 ]]; do
         -u|--production-url)
             if [[ -n "$2" && "$2" != -* ]]; then
                 PARAM_PRODUCTION_URL="$2"
+                shift 2
+            else
+                print_error "Option $1 requires a value"
+                exit 1
+            fi
+            ;;
+        -d|--dev-url)
+            if [[ -n "$2" && "$2" != -* ]]; then
+                PARAM_DEV_URL="$2"
                 shift 2
             else
                 print_error "Option $1 requires a value"
