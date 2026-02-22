@@ -23,9 +23,10 @@ export default defineConfig(({ mode }) => {
                 clientPort: vitePort,
             },
             watch: {
+                // Vite already ignores node_modules by default, but not vendor.
+                // Without this, vendor's ~8k files exhaust the inotify watcher limit in Docker.
                 ignored: [
                         '**/vendor/**',
-                        '**/node_modules/**',
                         '**/storage/framework/views/**',
                     ],
             },
