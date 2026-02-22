@@ -43,6 +43,8 @@ fi
 if [ -f "package.json" ]; then
     echo "Installing npm dependencies..."
     npm install
+    # Ensure www-data can write to node_modules (Vite needs .vite-temp/)
+    chown -R www-data:www-data /var/www/node_modules
 fi
 
 # Run Laravel setup commands
