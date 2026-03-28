@@ -275,13 +275,9 @@ setup_laravel_docker() {
         print_success "Vite configured for Docker (using APP_URL for HMR)"
     fi
     
-    # Clean up setup script after successful completion
-    print_info "Cleaning up setup files..."
-    rm -f setup.sh
-    print_success "Setup script removed"
-    
     # Note: Laravel database configuration is handled via environment variables
-    
+    # Note: setup.sh is kept for future updates - run install.sh again to update infrastructure
+
     print_success "🎉 Setup completed successfully!"
     print_info ""
     print_info "Development setup:"
