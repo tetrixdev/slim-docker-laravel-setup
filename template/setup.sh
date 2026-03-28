@@ -228,12 +228,7 @@ setup_laravel_docker() {
     fi
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{GITHUB_REPOSITORY_OWNER}}/$GITHUB_REPOSITORY_OWNER/g" .github/workflows/docker-laravel.yml
     print_success "GitHub Action workflow configured"
-    
-    # Process production compose file
-    print_info "Processing production docker-compose file..."
-    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{GITHUB_REPOSITORY_OWNER}}/$GITHUB_REPOSITORY_OWNER/g" docker-laravel/production/compose.yml
-    print_success "docker-laravel/production/compose.yml processed"
-    
+
     # Create environment files
     print_info "Creating .env files..."
     

@@ -33,10 +33,10 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/${COMPOSE_PROJECT_NAME}-nginx:${IMAGE_TAG:-latest}
     container_name: ${COMPOSE_PROJECT_NAME}-nginx
     restart: always
-    ports:
-      - "${NGINX_PORT:-80}:80"
+    # No ports exposed - traffic comes through proxy-nginx on main-network
     networks:
       - app-network
+      - main-network
     depends_on:
       php:
         condition: service_healthy
@@ -57,6 +57,11 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    # Database not exposed by default. To access from host, add to compose.override.yml:
+    # services:
+    #   postgres:
+    #     ports:
+    #       - "127.0.0.1:5433:5432"
     networks:
       - app-network
     healthcheck:
@@ -85,6 +90,10 @@ networks:
   app-network:
     name: ${COMPOSE_PROJECT_NAME}-network
     driver: bridge
+  main-network:
+    # Shared network for proxy-nginx routing. Create with:
+    # docker network create main-network
+    external: true
 
 volumes:
   postgres-data:

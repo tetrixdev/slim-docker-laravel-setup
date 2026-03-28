@@ -1,4 +1,4 @@
-FROM nginx:1.29-alpine
+FROM nginx:1.27-alpine
 
 # Copy processed nginx configuration
 COPY docker-laravel/shared/nginx/default.conf /etc/nginx/conf.d/default.conf

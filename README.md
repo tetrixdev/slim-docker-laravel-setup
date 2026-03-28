@@ -117,27 +117,30 @@ After running setup, your project will have:
 your-laravel-project/
 ├── .github/
 │   └── workflows/
-│       └── docker-build.yml    # GitHub Action for building production images
-├── docker/                     # Docker configuration files
+│       └── docker-laravel.yml  # GitHub Action for building production images
+├── deploy/
+│   └── compose.yml             # Production Docker Compose (uses pre-built images)
+├── docker-laravel/             # Docker configuration files
 │   ├── local/                  # Local development files
 │   │   └── php/
 │   │       ├── Dockerfile      # Development PHP build
-│   │       └── entrypoint.sh   # Development entrypoint
+│   │       ├── entrypoint.sh   # Development entrypoint
+│   │       └── supervisor/     # Local supervisor configs
 │   ├── shared/                 # Shared configuration files
 │   │   ├── nginx/
 │   │   │   └── default.conf    # Nginx configuration
-│   │   └── php/
-│   │       ├── Dockerfile      # Shared PHP base image
-│   │       └── local.ini       # PHP configuration
-│   └── production/             # Ready-to-deploy package
-│   ├── nginx/
-│   │   └── Dockerfile          # Production Nginx build
-│   ├── php/
-│   │   ├── Dockerfile          # Production PHP build
-│   │   └── entrypoint.sh       # Production entrypoint
-│   ├── README.md               # Production deployment guide
-│   ├── compose.yml             # Production Docker Compose (uses pre-built images)
-│   └── .env.example            # Production environment template
+│   │   ├── php/
+│   │   │   └── local.ini       # PHP configuration
+│   │   └── supervisor/         # Shared supervisor config
+│   └── production/             # Production build files
+│       ├── nginx/
+│       │   └── Dockerfile      # Production Nginx build
+│       ├── php/
+│       │   ├── Dockerfile      # Production PHP build
+│       │   ├── entrypoint.sh   # Production entrypoint
+│       │   └── supervisor/     # Production supervisor configs
+│       ├── README.md           # Production deployment guide
+│       └── .env.example        # Production environment template
 ├── www/                        # Your Laravel application
 │   ├── app/
 │   ├── config/
@@ -149,10 +152,11 @@ your-laravel-project/
 
 ### File Purposes
 
-- **Development files**: `docker/local/`, `compose.yml` - build locally for development
-- **Shared configuration**: `docker/shared/` - shared base image and configuration files used by both environments
-- **Production deployment**: `docker/production/` - ready-to-deploy package with instructions
-- **CI/CD**: `.github/workflows/docker-build.yml` - builds production images on release
+- **Development files**: `docker-laravel/local/`, `compose.yml` - build locally for development
+- **Shared configuration**: `docker-laravel/shared/` - shared configs used by both environments
+- **Production build**: `docker-laravel/production/` - Dockerfiles and configs for CI/CD builds
+- **Production deployment**: `deploy/compose.yml` - production compose with proxy support
+- **CI/CD**: `.github/workflows/docker-laravel.yml` - builds production images on release
 
 ## Laravel Configuration
 
@@ -228,7 +232,7 @@ VITE_PORT=5173
 DB_EXTERNAL_PORT=5433
 ```
 
-### Production (docker/production/.env.example)
+### Production (docker-laravel/production/.env.example)
 ```env
 APP_NAME=your-project
 APP_ENV=production
@@ -277,7 +281,7 @@ docker compose exec your-project-php npm install
 ### Switch to Production
 ```bash
 # Copy production environment
-cp docker/production/.env.example .env
+cp docker-laravel/production/.env.example .env
 # Update database password to secure value
 sed -i "s/CHANGE_THIS_PASSWORD/your-secure-password/" .env
 docker compose restart
@@ -358,7 +362,7 @@ Both volumes persist across container restarts and rebuilds.
 ### Switch Between Environments
 ```bash
 # Switch to production
-cp docker/production/.env.example .env
+cp docker-laravel/production/.env.example .env
 sed -i "s/CHANGE_THIS_PASSWORD/your-secure-password/" .env
 docker compose restart
 
@@ -382,31 +386,47 @@ The setup automatically creates a GitHub Action workflow that builds production-
 
 ### Production Deployment
 
-The `docker/production/` folder contains everything needed for production deployment:
+Production deployment uses the `deploy/` folder with pre-built images:
 
-1. **Copy deployment package to server**:
+1. **Prerequisites** (once per server):
    ```bash
-   scp -r docker/production/ user@server:/path/to/deployment/
-   cd /path/to/deployment/production/
+   # Create shared proxy network
+   docker network create main-network
+
+   # Install proxy-nginx (recommended)
+   curl -fsSL https://raw.githubusercontent.com/tetrixdev/proxy-nginx/main/install.sh | bash
    ```
 
-2. **Configure production environment**:
+2. **Copy deployment files to server**:
    ```bash
-   cp .env.example .env
-   # Edit .env to set DB_PASSWORD and APP_URL
+   scp -r deploy/ docker-laravel/production/.env.example user@server:/path/to/your-project/
+   ```
+
+3. **Configure environment**:
+   ```bash
+   cd /path/to/your-project
+   cp docker-laravel/production/.env.example .env
+   # Edit .env to set DB_PASSWORD, APP_URL, etc.
    nano .env
    ```
 
-3. **Deploy using pre-built images**:
+4. **Deploy using pre-built images**:
    ```bash
+   # Set required environment variables
+   export COMPOSE_PROJECT_NAME=your-project
+   export GITHUB_REPOSITORY_OWNER=your-username
+   export DB_DATABASE=your-project
+   export DB_USERNAME=your-project
+   export DB_PASSWORD=your-secure-password
+
    # Deploy latest version
-   docker compose up -d
-   
+   docker compose -f deploy/compose.yml up -d
+
    # Deploy specific version
-   IMAGE_TAG=v1.0.0 docker compose up -d
+   IMAGE_TAG=v1.0.0 docker compose -f deploy/compose.yml up -d
    ```
 
-3. **Production benefits**:
+5. **Production benefits**:
    - ✅ Fast deployments (no build time)
    - ✅ Dependencies pre-installed
    - ✅ Assets pre-built (no Node.js needed)
@@ -438,7 +458,7 @@ docker compose exec {PROJECT_NAME}-php chmod -R 775 storage bootstrap/cache
 ## Advanced Configuration
 
 ### Custom PHP Configuration
-Edit `docker/shared/php/local.ini` to customize PHP settings:
+Edit `docker-laravel/shared/php/local.ini` to customize PHP settings:
 ```ini
 upload_max_filesize=40M
 post_max_size=40M
@@ -447,7 +467,7 @@ max_execution_time=120
 ```
 
 ### Custom Nginx Configuration
-Edit `docker/shared/nginx/default.conf` for custom Nginx settings.
+Edit `docker-laravel/shared/nginx/default.conf` for custom Nginx settings.
 
 ### Additional Services
 Redis is included by default. Add additional services like Memcached or Elasticsearch by extending the `compose.yml`.
