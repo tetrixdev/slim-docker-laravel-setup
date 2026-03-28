@@ -12,29 +12,54 @@ A lightweight, production-ready Docker setup for Laravel applications with PHP 8
 - ⚡ **Queue Worker** - `queue:listen` (dev) / `queue:work` (prod)
 - 📅 **Scheduler** - `schedule:work` for sub-minute scheduling
 - 🔧 **Health checks** for all services
-- 📦 **One-command setup** for new and existing projects
-- 🔄 **Configurable ports** for running multiple projects
-- 🚀 **Production-ready** configuration
+- 📦 **One-liner setup** for new and existing projects
+- 🔄 **Idempotent** - run again anytime to update infrastructure
+- 🚀 **Production-ready** with proxy-nginx integration
 
-## New Project Setup
+## Quick Start (One-Liner)
 
-Create an empty folder with your desired project name, then copy and paste this:
+### New Project
 
 ```bash
-# Install Laravel
+# Create project folder and Laravel app
+mkdir my-project && cd my-project
 composer create-project laravel/laravel www
 
-# Download Docker setup
-curl -L https://github.com/tetrixdev/slim-docker-laravel-setup/archive/main.tar.gz | tar -xz --wildcards --strip-components=2 "*/template/*"
-
-# Run setup (will prompt for project name and production URL)
-./setup.sh
+# Install Docker setup (one-liner)
+curl -sSL https://raw.githubusercontent.com/tetrixdev/slim-docker-laravel-setup/main/install.sh | bash
 
 # Start containers
 docker compose up -d
-
-# Your app is ready at http://localhost
 ```
+
+### Existing Project
+
+Navigate to your Laravel project root (where `artisan` is):
+
+```bash
+# Install Docker setup (one-liner - moves your files to www/)
+curl -sSL https://raw.githubusercontent.com/tetrixdev/slim-docker-laravel-setup/main/install.sh | bash
+
+# Start containers
+docker compose up -d
+```
+
+### Update Existing Docker Setup
+
+Already using slim-docker-laravel-setup? Run the same command to update:
+
+```bash
+# Updates infrastructure to latest version (preserves www/)
+curl -sSL https://raw.githubusercontent.com/tetrixdev/slim-docker-laravel-setup/main/install.sh | bash
+
+# Reconfigure if needed
+./setup.sh
+```
+
+The installer is **idempotent** - it detects your project state and does the right thing:
+- Empty directory → prompts you to create Laravel first
+- Laravel root (has `artisan`) → moves files to `www/`, installs Docker setup
+- Existing setup (has `www/`) → preserves `www/`, updates infrastructure files
 
 ## Setup Script Options
 
@@ -56,27 +81,11 @@ The setup script supports both interactive and non-interactive modes:
 # Available options:
 #   -n, --project-name NAME     Set project name (lowercase, no spaces)
 #   -u, --production-url URL    Set production URL for .env.production
+#   -d, --dev-url URL           Set development APP_URL (for Vite HMR)
 #   -o, --github-owner OWNER    Set GitHub repository owner manually
 #   -a, --auto-detect-owner     Auto-accept detected GitHub owner (no prompt)
 #   -h, --help                  Show help message
 #   --check                     Check prerequisites only
-```
-
-## Existing Project Setup
-
-Navigate to your existing Laravel project root directory, then copy and paste this:
-
-```bash
-# Download Docker setup
-curl -L https://github.com/tetrixdev/slim-docker-laravel-setup/archive/main.tar.gz | tar -xz --wildcards --strip-components=2 "*/template/*"
-
-# Run setup (will automatically move Laravel files to www/ folder)
-./setup.sh
-
-# Start containers
-docker compose up -d
-
-# Your app is ready at http://localhost
 ```
 
 ## Local Development Testing
