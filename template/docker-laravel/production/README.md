@@ -1,152 +1,142 @@
-# Production Deployment Guide
+# Production Build & Deployment Guide
 
-This folder contains everything needed to deploy **{{PROJECT_NAME}}** to production.
+This folder contains the **Dockerfiles and configurations** used to build production images for **{{PROJECT_NAME}}**.
 
-## Quick Deployment
+## Directory Structure
 
-1. **Copy this folder to your production server**:
+```text
+docker-laravel/production/
+├── nginx/
+│   └── Dockerfile      # Production Nginx image
+├── php/
+│   ├── Dockerfile      # Production PHP-FPM image
+│   ├── entrypoint.sh   # Container startup script
+│   └── supervisor/     # Process management configs
+├── .env.example        # Production environment template
+└── README.md           # This file
+```
+
+## Building Images
+
+Images are built automatically by GitHub Actions when you create a release. The workflow:
+
+1. Builds `ghcr.io/{{GITHUB_REPOSITORY_OWNER}}/{{PROJECT_NAME}}-php:{tag}`
+2. Builds `ghcr.io/{{GITHUB_REPOSITORY_OWNER}}/{{PROJECT_NAME}}-nginx:{tag}`
+3. Pushes to GitHub Container Registry
+
+To build manually:
+```bash
+# From project root
+docker build -f docker-laravel/production/php/Dockerfile -t {{PROJECT_NAME}}-php .
+docker build -f docker-laravel/production/nginx/Dockerfile -t {{PROJECT_NAME}}-nginx .
+```
+
+## Deployment
+
+Production deployment uses the `deploy/` folder at the project root.
+
+### Prerequisites
+
+1. **Create the proxy network** (once per server):
    ```bash
-   scp -r docker/production/ user@server:/path/to/deployment/
-   cd /path/to/deployment/production/
+   docker network create main-network
+   ```
+
+2. **Set up a reverse proxy** (e.g., [proxy-nginx](https://github.com/tetrixdev/proxy-nginx)):
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/tetrixdev/proxy-nginx/main/install.sh | bash
+   ```
+
+### Deploy Steps
+
+1. **Copy deploy folder to server**:
+   ```bash
+   scp -r deploy/ user@server:/path/to/{{PROJECT_NAME}}/
    ```
 
 2. **Configure environment**:
    ```bash
-   # Copy and edit environment file
-   cp .env.example .env
-   
-   # Update these required values:
-   # - DB_PASSWORD (change from CHANGE_THIS_PASSWORD)
-   # - APP_URL (set your domain)
+   cd /path/to/{{PROJECT_NAME}}
+
+   # Create .env from template
+   cp docker-laravel/production/.env.example .env
+
+   # Edit required values
    nano .env
    ```
 
-3. **Deploy with pre-built images**:
+3. **Set required environment variables**:
    ```bash
-   # Deploy latest version
-   docker compose up -d
-   
-   # Deploy specific version
-   IMAGE_TAG=v1.0.0 docker compose up -d
+   export COMPOSE_PROJECT_NAME={{PROJECT_NAME}}
+   export GITHUB_REPOSITORY_OWNER={{GITHUB_REPOSITORY_OWNER}}
+   export DB_DATABASE={{PROJECT_NAME}}
+   export DB_USERNAME={{PROJECT_NAME}}
+   export DB_PASSWORD=your-secure-password
    ```
 
-## What's Included
+4. **Deploy**:
+   ```bash
+   docker compose -f deploy/compose.yml up -d
+   ```
 
-- `compose.yml` - Production Docker Compose configuration using pre-built images
-- `.env.example` - Production environment template
-- `README.md` - This deployment guide
+### Update Deployment
 
-## Pre-built Images
+```bash
+# Pull latest images and restart
+docker compose -f deploy/compose.yml pull
+docker compose -f deploy/compose.yml up -d
 
-Your CI/CD pipeline builds these images automatically when you create GitHub releases:
-
-- `ghcr.io/{{GITHUB_REPOSITORY_OWNER}}/{{PROJECT_NAME}}-php:latest`
-- `ghcr.io/{{GITHUB_REPOSITORY_OWNER}}/{{PROJECT_NAME}}-nginx:latest`
+# Deploy specific version
+IMAGE_TAG=v1.2.0 docker compose -f deploy/compose.yml up -d
+```
 
 ## Environment Variables
 
-Key production environment variables in `.env`:
+See `.env.example` in this folder for the full list. Key variables:
 
-```env
-# Application
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://your-domain.com
+| Variable | Description |
+|----------|-------------|
+| `APP_URL` | Your production domain (https://...) |
+| `DB_PASSWORD` | Database password (change from default!) |
+| `REDIS_HOST` | Redis container name (auto-set) |
 
-# Database (update these!)
-DB_PASSWORD=CHANGE_THIS_PASSWORD
+## Proxy Configuration
 
-# Ports (optional)
-NGINX_PORT=80
-DB_PORT=5432
-```
+The production compose joins `main-network`, allowing proxy-nginx to route traffic.
 
-## Deployment Commands
+Add a server block to your proxy-nginx config:
+```nginx
+server {
+    server_name {{PROJECT_NAME}}.yourdomain.com;
 
-```bash
-# Start services
-docker compose up -d
+    location / {
+        proxy_pass http://{{PROJECT_NAME}}-nginx;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
 
-# View logs
-docker compose logs -f
-
-# Stop services
-docker compose down
-
-# Update to latest version
-docker compose pull && docker compose up -d
-
-# Deploy specific version
-IMAGE_TAG=v1.2.0 docker compose up -d
-```
-
-## Health Checks
-
-All services include health checks. Monitor with:
-
-```bash
-# Check service health
-docker compose ps
-
-# View container logs
-docker compose logs {{PROJECT_NAME}}-php
-docker compose logs {{PROJECT_NAME}}-nginx
-docker compose logs {{PROJECT_NAME}}-postgres
-```
-
-## Database Management
-
-```bash
-# Run migrations
-docker compose exec {{PROJECT_NAME}}-php php artisan migrate --force
-
-# Clear caches
-docker compose exec {{PROJECT_NAME}}-php php artisan optimize:clear
-
-# Access database
-docker compose exec {{PROJECT_NAME}}-postgres psql -U {{PROJECT_NAME}} -d {{PROJECT_NAME}}
-```
-
-## SSL/HTTPS Setup
-
-This setup runs on HTTP (port 80). For HTTPS in production:
-
-1. **Use a reverse proxy** (nginx, Caddy, Traefik) in front of this stack
-2. **Or modify compose.yml** to include SSL certificates
-
-Example with Caddy:
-```bash
-# Install Caddy on host
-# Create Caddyfile:
-your-domain.com {
-    reverse_proxy localhost:80
+    listen 80;
 }
+```
+
+Then request SSL:
+```bash
+docker exec proxy-nginx certbot --nginx -d {{PROJECT_NAME}}.yourdomain.com
 ```
 
 ## Troubleshooting
 
 **Container won't start:**
 ```bash
-docker compose logs service-name
+docker compose -f deploy/compose.yml logs php
+docker compose -f deploy/compose.yml logs nginx
 ```
 
 **Database connection issues:**
-- Check `DB_*` variables in `.env`
-- Ensure PostgreSQL container is healthy: `docker compose ps`
+- Verify `DB_*` environment variables are set
+- Check PostgreSQL is healthy: `docker compose -f deploy/compose.yml ps`
 
 **Image pull failures:**
-- Ensure you have access to `ghcr.io/{{GITHUB_REPOSITORY_OWNER}}/{{PROJECT_NAME}}-*`
-- Login if needed: `docker login ghcr.io`
-
-## Security Notes
-
-- Change `DB_PASSWORD` from the default
-- Use strong passwords in production
-- Keep images updated via your CI/CD pipeline
-- Monitor container security updates
-
-## Support
-
-- Check application logs: `docker compose logs {{PROJECT_NAME}}-php`
-- Review Laravel logs: `docker compose exec {{PROJECT_NAME}}-php tail -f storage/logs/laravel.log`
-- Database logs: `docker compose logs {{PROJECT_NAME}}-postgres`
+- Login to GHCR: `docker login ghcr.io`
+- Verify image exists: `docker pull ghcr.io/{{GITHUB_REPOSITORY_OWNER}}/{{PROJECT_NAME}}-php:latest`
