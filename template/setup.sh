@@ -290,7 +290,7 @@ setup_laravel_docker() {
     print_info ""
     print_info "Production deployment:"
     print_info "1. Create GitHub release to trigger image build"
-    print_info "2. Deploy with: cd docker-laravel/production && docker-compose up -d"
+    print_info "2. Deploy with: docker compose -f deploy/compose.yml up -d"
     print_info "3. Use built images: ghcr.io/$GITHUB_REPOSITORY_OWNER/$PROJECT_NAME-php:latest"
     print_info ""
     print_info "Database connection details:"

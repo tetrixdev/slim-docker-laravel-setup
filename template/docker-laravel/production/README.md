@@ -4,7 +4,7 @@ This folder contains the **Dockerfiles and configurations** used to build produc
 
 ## Directory Structure
 
-```
+```text
 docker-laravel/production/
 ├── nginx/
 │   └── Dockerfile      # Production Nginx image
