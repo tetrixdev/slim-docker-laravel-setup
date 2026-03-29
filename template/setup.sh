@@ -407,6 +407,27 @@ setup_laravel_docker() {
         print_success "Vite configured for Docker (using APP_URL for HMR)"
     fi
 
+    # Configure trustProxies middleware for reverse proxy support (Laravel 11+)
+    # This ensures Laravel recognizes HTTPS when behind proxy-nginx
+    local bootstrap_app="$LARAVEL_DIR/bootstrap/app.php"
+    if [ -f "$bootstrap_app" ]; then
+        if grep -q "trustProxies" "$bootstrap_app"; then
+            print_success "trustProxies already configured"
+        elif grep -q "withMiddleware" "$bootstrap_app"; then
+            print_info "Configuring trustProxies middleware..."
+            # Replace empty middleware closure with trustProxies
+            sed -i 's/->withMiddleware(function (Middleware $middleware): void {[[:space:]]*\/\/[[:space:]]*})/->withMiddleware(function (Middleware $middleware): void {\n        $middleware->trustProxies(at: '"'"'*'"'"');\n    })/g' "$bootstrap_app"
+            # Also handle case where it's on multiple lines
+            sed -i ':a;N;$!ba;s/->withMiddleware(function (Middleware $middleware): void {\n[[:space:]]*\/\/\n[[:space:]]*})/->withMiddleware(function (Middleware $middleware): void {\n        $middleware->trustProxies(at: '"'"'*'"'"');\n    })/g' "$bootstrap_app"
+            if grep -q "trustProxies" "$bootstrap_app"; then
+                print_success "trustProxies configured for reverse proxy support"
+            else
+                print_warning "Could not auto-configure trustProxies. Add manually to bootstrap/app.php:"
+                echo '        $middleware->trustProxies(at: '"'"'*'"'"');'
+            fi
+        fi
+    fi
+
     # Note: Laravel database configuration is handled via environment variables
     # Note: setup.sh is kept for future updates - run install.sh again to update infrastructure
 
