@@ -12,6 +12,8 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/${COMPOSE_PROJECT_NAME}-php:${IMAGE_TAG:-latest}
     container_name: ${COMPOSE_PROJECT_NAME}-php
     restart: always
+    volumes:
+      - ./.env:/var/www/.env:ro
     environment:
       - APP_ENV=production
       - REDIS_HOST=${COMPOSE_PROJECT_NAME}-redis
