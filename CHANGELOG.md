@@ -8,13 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Version tracking file** (`.slim-docker-version`) - Projects now include a version file that tracks which slim-docker-laravel-setup version was used. This enables:
+- **Version tracking via commit hash** (`.slim-docker-version`) - install.sh now writes the git commit hash to this file. This enables:
   - Automated detection of outdated setups during deployment
-  - Clear instructions to run install.sh for updates
-  - Better compatibility checking
+  - Precise tracking of exactly which template version was installed
+  - No need to remember to release - every commit is trackable
 
 ### Changed
-- Replaced env-based version tracking (comment in .env) with dedicated `.slim-docker-version` file
+- install.sh now dynamically fetches and writes the commit hash instead of using static version numbers
 
 ## [0.1.0] - 2025-01-25
 

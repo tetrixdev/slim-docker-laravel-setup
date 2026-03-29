@@ -4,9 +4,18 @@ Docker-based Laravel development and production environment.
 
 ## Version
 
-Check `.slim-docker-version` file in the project root. This file contains the slim-docker-laravel-setup version used to set up this project.
+Check `.slim-docker-version` file in the project root. This file contains the git commit hash of slim-docker-laravel-setup that was used to set up this project.
 
 If the file is missing, the project was set up before version tracking was added and should be updated.
+
+To check if updates are available:
+```bash
+# Current version in project
+cat .slim-docker-version
+
+# Latest version on main branch
+curl -s https://api.github.com/repos/tetrixdev/slim-docker-laravel-setup/commits/main | jq -r '.sha'
+```
 
 ## Structure
 
