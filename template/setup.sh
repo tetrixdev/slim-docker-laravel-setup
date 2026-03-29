@@ -166,7 +166,7 @@ validate_directory() {
         # Check for unexpected files (allow setup files and www folder)
         visible_files=$(ls -1 2>/dev/null | wc -l)
         if [ "$visible_files" -gt 0 ]; then
-            allowed_files="www setup.sh compose.yml docker-laravel .env.example DOCKER_README.md .github CLAUDE.md deploy"
+            allowed_files="www setup.sh compose.yml compose.override.yaml docker-laravel .env .env.example DOCKER_README.md .github CLAUDE.md deploy Dockerfile.pocketdev .gitignore"
             for file in *; do
                 if [ -e "$file" ]; then
                     case " $allowed_files " in

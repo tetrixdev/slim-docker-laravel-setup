@@ -62,6 +62,10 @@ detect_existing_config() {
     # Detect GitHub owner from workflow file
     if [ -f ".github/workflows/docker-laravel.yml" ]; then
         DETECTED_GITHUB_OWNER=$(grep -oP 'ghcr\.io/\K[^/]+' .github/workflows/docker-laravel.yml 2>/dev/null | head -1)
+        # Skip if it's a GitHub Actions variable (contains ${{ or }})
+        if [[ "$DETECTED_GITHUB_OWNER" == *'${'* ]] || [[ "$DETECTED_GITHUB_OWNER" == *'}}'* ]]; then
+            DETECTED_GITHUB_OWNER=""
+        fi
     fi
 
     # Detect production URL from production .env.example
