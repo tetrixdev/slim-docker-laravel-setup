@@ -4,7 +4,9 @@ Docker-based Laravel development and production environment.
 
 ## Version
 
-Check `SLIM_DOCKER_VERSION` in `.env` or look for version comments in Dockerfiles.
+Check `.slim-docker-version` file in the project root. This file contains the slim-docker-laravel-setup version used to set up this project.
+
+If the file is missing, the project was set up before version tracking was added and should be updated.
 
 ## Structure
 
@@ -75,10 +77,14 @@ Production runs via supervisor:
 
 ## Updating from slim-docker-laravel-setup
 
-1. Check current version: `grep SLIM_DOCKER_VERSION .env`
-2. Read CHANGELOG.md for versions between current and target
-3. Apply changes, noting any conflicts with customizations
-4. Update version in `.env`
+1. Check current version: `cat .slim-docker-version` (if missing, very outdated)
+2. Check latest version: https://github.com/tetrixdev/slim-docker-laravel-setup/releases
+3. Run the installer to update:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/tetrixdev/slim-docker-laravel-setup/main/install.sh | bash
+   ```
+4. Review changes and run `./setup.sh` if needed
+5. The `.slim-docker-version` file will be updated automatically
 
 ## Customizable vs Template Files
 
