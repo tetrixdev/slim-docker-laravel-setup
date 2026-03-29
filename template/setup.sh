@@ -74,7 +74,8 @@ detect_filled_values() {
     if [ -f ".github/workflows/docker-laravel.yml" ]; then
         if ! grep -q "{{GITHUB_REPOSITORY_OWNER}}" .github/workflows/docker-laravel.yml 2>/dev/null; then
             # Extract existing owner
-            local filled_owner=$(grep -oP 'ghcr\.io/\K[^/]+' .github/workflows/docker-laravel.yml 2>/dev/null | head -1)
+            local filled_owner
+            filled_owner=$(grep -oP 'ghcr\.io/\K[^/]+' .github/workflows/docker-laravel.yml 2>/dev/null | head -1)
             if [ -n "$filled_owner" ]; then
                 DETECTED_GITHUB_OWNER="$filled_owner"
             fi
@@ -84,7 +85,8 @@ detect_filled_values() {
     # Check production .env.example for URL
     if [ -f "docker-laravel/production/.env.example" ]; then
         if ! grep -q "{{PRODUCTION_URL}}" docker-laravel/production/.env.example 2>/dev/null; then
-            local filled_url=$(grep -oP 'APP_URL=\K.+' docker-laravel/production/.env.example 2>/dev/null | head -1)
+            local filled_url
+            filled_url=$(grep -oP 'APP_URL=\K.+' docker-laravel/production/.env.example 2>/dev/null | head -1)
             if [ -n "$filled_url" ] && [ "$filled_url" != "http://localhost" ]; then
                 DETECTED_PRODUCTION_URL="$filled_url"
             fi

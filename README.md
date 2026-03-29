@@ -83,7 +83,7 @@ The setup script supports both interactive and non-interactive modes:
 #   -u, --production-url URL    Set production URL for .env.production
 #   -d, --dev-url URL           Set development APP_URL (for Vite HMR)
 #   -o, --github-owner OWNER    Set GitHub repository owner manually
-#   -a, --auto-detect-owner     Auto-accept detected GitHub owner (no prompt)
+#   -a, --auto-detect           Auto-accept all detected values (no prompts)
 #   -h, --help                  Show help message
 #   --check                     Check prerequisites only
 ```
