@@ -176,6 +176,17 @@ download_template() {
     cp "$template_dir/setup.sh" .
     chmod +x setup.sh
 
+    # Write the commit hash for version tracking
+    # This fetches the latest commit hash from the main branch
+    local commit_hash
+    commit_hash=$(curl -s "https://api.github.com/repos/$REPO/commits/$BRANCH" | grep -m1 '"sha"' | cut -d'"' -f4)
+    if [ -n "$commit_hash" ]; then
+        echo "$commit_hash" > .slim-docker-version
+        print_success "Version tracking: $commit_hash"
+    else
+        print_warning "Could not fetch commit hash for version tracking"
+    fi
+
     print_success "Template files downloaded"
 }
 

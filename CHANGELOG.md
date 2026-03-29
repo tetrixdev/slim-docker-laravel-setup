@@ -5,6 +5,17 @@ All notable changes to slim-docker-laravel-setup will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Version tracking via commit hash** (`.slim-docker-version`) - install.sh now writes the git commit hash to this file. This enables:
+  - Automated detection of outdated setups during deployment
+  - Precise tracking of exactly which template version was installed
+  - No need to remember to release - every commit is trackable
+
+### Changed
+- install.sh now dynamically fetches and writes the commit hash instead of using static version numbers
+
 ## [0.1.0] - 2025-01-25
 
 ### Added
