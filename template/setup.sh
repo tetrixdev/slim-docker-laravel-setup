@@ -107,11 +107,12 @@ detect_filled_values() {
 # =============================================================================
 detect_from_git() {
     if git rev-parse --git-dir > /dev/null 2>&1; then
-        local remote_url=$(git remote get-url origin 2>/dev/null)
+        local remote_url git_owner git_repo
+        remote_url=$(git remote get-url origin 2>/dev/null)
         if [ -n "$remote_url" ]; then
             # Extract owner and repo from GitHub URL
-            local git_owner=$(echo "$remote_url" | sed -n 's#.*github\.com[:/]\([^/]*\)/.*#\1#p')
-            local git_repo=$(echo "$remote_url" | sed -n 's#.*github\.com[:/][^/]*/\([^.]*\).*#\1#p')
+            git_owner=$(echo "$remote_url" | sed -n 's#.*github\.com[:/]\([^/]*\)/.*#\1#p')
+            git_repo=$(echo "$remote_url" | sed -n 's#.*github\.com[:/][^/]*/\([^.]*\).*#\1#p')
 
             if [ -z "$DETECTED_GITHUB_OWNER" ] && [ -n "$git_owner" ]; then
                 DETECTED_GITHUB_OWNER="$git_owner"
@@ -256,7 +257,8 @@ get_config_value() {
             return
         else
             # Ask user if they want to use existing value
-            local use_existing=$(get_input "Use existing $name '$filled_value'? (yes/no)" "yes" "")
+            local use_existing
+            use_existing=$(get_input "Use existing $name '$filled_value'? (yes/no)" "yes" "")
             if [[ "$use_existing" =~ ^[Yy]([Ee][Ss])?$ ]]; then
                 echo "$filled_value"
                 return
