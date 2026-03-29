@@ -57,6 +57,10 @@ detect_existing_config() {
         if [ -z "$DETECTED_PROJECT_NAME" ]; then
             DETECTED_PROJECT_NAME=$(grep -oP 'name:\s*\K[^-\s]+(?=-network)' compose.yml 2>/dev/null | head -1)
         fi
+        # Skip if it's a template placeholder
+        if [[ "$DETECTED_PROJECT_NAME" == *"{{"* ]]; then
+            DETECTED_PROJECT_NAME=""
+        fi
     fi
 
     # Detect GitHub owner from workflow file
