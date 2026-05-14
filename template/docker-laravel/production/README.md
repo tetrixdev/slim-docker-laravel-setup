@@ -76,18 +76,46 @@ Production deployment uses the `deploy/` folder at the project root.
 
 4. **Deploy**:
    ```bash
-   docker compose -f deploy/compose.yml up -d
+   bash deploy/up.sh
    ```
+   This pulls images, starts services (including building the backup sidecar),
+   and waits for all health checks to pass.
 
 ### Update Deployment
 
 ```bash
-# Pull latest images and restart
+# Recommended: use the deploy script
+bash deploy/up.sh
+
+# Or manually:
 docker compose -f deploy/compose.yml pull
-docker compose -f deploy/compose.yml up -d
+docker compose -f deploy/compose.yml up -d --build
 
 # Deploy specific version
-IMAGE_TAG=v1.2.0 docker compose -f deploy/compose.yml up -d
+IMAGE_TAG=v1.2.0 bash deploy/up.sh
+```
+
+### Database Backups
+
+A backup sidecar container runs alongside PostgreSQL, performing automated daily backups at 03:00 server time.
+
+- Backups are gzipped SQL dumps stored in the `{{PROJECT_NAME}}-backups` Docker volume
+- Retention defaults to 7 days (configurable via `BACKUP_RETENTION_DAYS` in `.env`)
+- The sidecar is built locally from `deploy/backup/` (not pushed to GHCR)
+
+**Manual backup:**
+```bash
+docker exec {{PROJECT_NAME}}-backup /usr/local/bin/backup.sh
+```
+
+**List backups:**
+```bash
+docker exec {{PROJECT_NAME}}-backup ls -lh /backups/
+```
+
+**Restore from backup:**
+```bash
+docker exec {{PROJECT_NAME}}-backup sh -c 'gunzip -c /backups/BACKUP_FILE.sql.gz | psql -h "$PGHOST" -U "$PGUSER" "$PGDATABASE"'
 ```
 
 ## Environment Variables
@@ -99,6 +127,7 @@ See `.env.example` in this folder for the full list. Key variables:
 | `APP_URL` | Your production domain (https://...) |
 | `DB_PASSWORD` | Database password (change from default!) |
 | `REDIS_HOST` | Redis container name (auto-set) |
+| `BACKUP_RETENTION_DAYS` | Days to keep backups (default: 7) |
 
 ## Proxy Configuration
 

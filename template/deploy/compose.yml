@@ -88,6 +88,24 @@ services:
       retries: 3
       start_period: 5s
 
+  backup:
+    build: ./backup
+    container_name: ${COMPOSE_PROJECT_NAME}-backup
+    restart: always
+    environment:
+      PGHOST: ${COMPOSE_PROJECT_NAME}-postgres
+      PGUSER: ${DB_USERNAME}
+      PGPASSWORD: ${DB_PASSWORD}
+      PGDATABASE: ${DB_DATABASE}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+    volumes:
+      - postgres-backups:/backups
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 networks:
   app-network:
     name: ${COMPOSE_PROJECT_NAME}-network
@@ -102,3 +120,5 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME}-postgres
   redis-data:
     name: ${COMPOSE_PROJECT_NAME}-redis
+  postgres-backups:
+    name: ${COMPOSE_PROJECT_NAME}-backups
