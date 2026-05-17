@@ -6,6 +6,9 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     const vitePort = parseInt(env.VITE_PORT || '5173');
     const appUrl = new URL(env.APP_URL || 'http://localhost');
+    // Remote dev: serve the Vite dev server behind a reverse proxy by setting
+    // VITE_DEV_ORIGIN (e.g. https://dm-vite.example.com). Unset = local dev.
+    const devOrigin = env.VITE_DEV_ORIGIN ? new URL(env.VITE_DEV_ORIGIN) : null;
 
     return {
         plugins: [
@@ -18,10 +21,25 @@ export default defineConfig(({ mode }) => {
         server: {
             host: '0.0.0.0',
             port: 5173,
-            hmr: {
-                host: appUrl.hostname,
-                clientPort: vitePort,
-            },
+            // Behind a reverse proxy (VITE_DEV_ORIGIN set), assets and the HMR
+            // socket must use the public origin; otherwise fall back to local dev.
+            ...(devOrigin
+                ? {
+                      origin: devOrigin.origin,
+                      cors: { origin: appUrl.origin },
+                      allowedHosts: [devOrigin.hostname],
+                      hmr: {
+                          protocol: devOrigin.protocol === 'https:' ? 'wss' : 'ws',
+                          host: devOrigin.hostname,
+                          clientPort: devOrigin.protocol === 'https:' ? 443 : 80,
+                      },
+                  }
+                : {
+                      hmr: {
+                          host: appUrl.hostname,
+                          clientPort: vitePort,
+                      },
+                  }),
             watch: {
                 // Vite already ignores node_modules by default, but not vendor.
                 // Without this, vendor's ~8k files exhaust the inotify watcher limit in Docker.
