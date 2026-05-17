@@ -65,15 +65,15 @@ COPY www/ /var/www/
 # Install Composer dependencies (production optimized)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --verbose
 
-# Install Node.js, build assets, then remove Node.js (single layer to minimize image size)
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs \
-    && npm ci \
-    && npm run build \
-    && rm -rf node_modules \
-    && apt-get purge -y nodejs \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nodesource.list
+# Frontend assets are NOT built here. They are built once by the CI workflow
+# (npm run build) before the Docker build and arrive via "COPY www/" above as
+# public/build/. The nginx image copies the same public/ directory, so both
+# containers serve a manifest that matches the files actually on disk.
+#
+# Building assets a second time inside this image is unsafe: Tailwind v4's
+# content-aware CSS generation produces a different content hash than the CI
+# build, so the PHP-rendered manifest would point at a CSS file the nginx
+# container never received, resulting in a 404 for the stylesheet.
 
 # Create storage symlink
 RUN php artisan storage:link --no-interaction

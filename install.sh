@@ -262,6 +262,33 @@ output_instructions() {
     fi
 }
 
+# Apply configuration after an update by running setup.sh automatically.
+#
+# Runs non-interactively (-a) with the values detected before cleaning. This is
+# only safe when all three values were detected: setup.sh would otherwise fall
+# back to an interactive prompt, which cannot be answered when install.sh is
+# run via `curl ... | bash`. When detection is incomplete, fall back to
+# printing manual instructions instead of risking a hung prompt.
+#
+# setup.sh itself never overwrites an existing .env, so this is non-destructive.
+apply_update_configuration() {
+    if [ -n "$DETECTED_PROJECT_NAME" ] && [ -n "$DETECTED_GITHUB_OWNER" ] && [ -n "$DETECTED_PRODUCTION_URL" ]; then
+        echo ""
+        print_info "Applying configuration with detected values..."
+        echo ""
+        if ./setup.sh -n "$DETECTED_PROJECT_NAME" -u "$DETECTED_PRODUCTION_URL" -o "$DETECTED_GITHUB_OWNER" -a; then
+            return 0
+        fi
+        echo ""
+        print_error "Automatic setup failed. Finish the update by running setup manually:"
+        output_instructions "update"
+        exit 1
+    fi
+
+    print_warning "Could not auto-detect all project values; skipping automatic setup."
+    output_instructions "update"
+}
+
 # Main installation logic
 main() {
     echo ""
@@ -286,8 +313,8 @@ main() {
             # Download fresh template
             download_template
 
-            # Output instructions with detected values
-            output_instructions "update"
+            # Apply configuration automatically (runs setup.sh non-interactively)
+            apply_update_configuration
             ;;
 
         "laravel-root")

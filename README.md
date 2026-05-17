@@ -51,10 +51,12 @@ Already using slim-docker-laravel-setup? Run the same command to update:
 ```bash
 # Updates infrastructure to latest version (preserves www/)
 curl -sSL https://raw.githubusercontent.com/tetrixdev/slim-docker-laravel-setup/main/install.sh | bash
-
-# Reconfigure if needed
-./setup.sh
 ```
+
+On an existing project the installer refreshes the infrastructure files and
+then runs `setup.sh` automatically with your detected project values — no
+second step required. Your existing `.env` is always preserved (`APP_KEY` and
+`DB_PASSWORD` are never regenerated). Review the result with `git diff`.
 
 The installer is **idempotent** - it detects your project state and does the right thing:
 - Empty directory → prompts you to create Laravel first

@@ -367,23 +367,36 @@ setup_laravel_docker() {
     # Update .env.example with project-specific values
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" .env.example
 
-    # Create .env from .env.example with generated password and app key
-    cp .env.example .env
-    sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)/" .env
+    # Create .env ONLY if it does not exist yet.
+    #
+    # Re-running setup on an existing project (e.g. after an infrastructure
+    # update) must NEVER overwrite .env: it holds the generated APP_KEY and
+    # DB_PASSWORD. Losing APP_KEY invalidates all encrypted data and sessions;
+    # losing DB_PASSWORD locks the app out of its database. Neither is
+    # recoverable. The refreshed .env.example is left in place so any new
+    # template keys can be diffed in by hand.
+    if [ -f ".env" ]; then
+        print_success "Existing .env preserved (APP_KEY and DB_PASSWORD kept)"
+        echo -e "   Review new template keys with: ${CYAN}diff .env .env.example${NC}"
+    else
+        # Create .env from .env.example with generated password and app key
+        cp .env.example .env
+        sed -i "s/DB_PASSWORD=laravel/DB_PASSWORD=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)/" .env
 
-    # Generate Laravel APP_KEY using openssl (persists across container recreates)
-    if ! command_exists openssl; then
-        print_error "openssl is required to generate APP_KEY. Please install it and re-run setup."
-        exit 1
-    fi
-    APP_KEY="base64:$(openssl rand -base64 32)"
-    sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
-    print_success "Application key generated"
+        # Generate Laravel APP_KEY using openssl (persists across container recreates)
+        if ! command_exists openssl; then
+            print_error "openssl is required to generate APP_KEY. Please install it and re-run setup."
+            exit 1
+        fi
+        APP_KEY="base64:$(openssl rand -base64 32)"
+        sed -i "s|^APP_KEY=.*|APP_KEY=$APP_KEY|" .env
+        print_success "Application key generated"
 
-    # Set development APP_URL if provided (for Vite HMR on external devices)
-    if [[ -n "$PARAM_DEV_URL" ]]; then
-        sed -i "s|APP_URL=http://localhost|APP_URL=$PARAM_DEV_URL|" .env
-        print_success "Development APP_URL set to $PARAM_DEV_URL"
+        # Set development APP_URL if provided (for Vite HMR on external devices)
+        if [[ -n "$PARAM_DEV_URL" ]]; then
+            sed -i "s|APP_URL=http://localhost|APP_URL=$PARAM_DEV_URL|" .env
+            print_success "Development APP_URL set to $PARAM_DEV_URL"
+        fi
     fi
 
     # Process docker-laravel/production/.env.example
@@ -429,7 +442,8 @@ setup_laravel_docker() {
     fi
 
     # Note: Laravel database configuration is handled via environment variables
-    # Note: setup.sh is kept for future updates - run install.sh again to update infrastructure
+    # Note: setup.sh is safe to re-run. install.sh runs it automatically after
+    #       an infrastructure update; an existing .env is always preserved.
 
     echo ""
     echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"

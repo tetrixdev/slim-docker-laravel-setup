@@ -92,8 +92,12 @@ Production runs via supervisor:
    ```bash
    curl -sSL https://raw.githubusercontent.com/tetrixdev/slim-docker-laravel-setup/main/install.sh | bash
    ```
-4. Review changes and run `./setup.sh` if needed
-5. The `.slim-docker-version` file will be updated automatically
+   The installer refreshes the infrastructure files and then runs `setup.sh`
+   automatically with your detected project values. Your existing `.env` is
+   always preserved (`APP_KEY` and `DB_PASSWORD` are never regenerated).
+4. Review the changes with `git diff` and re-apply any manual customizations to
+   docker configs if needed.
+5. The `.slim-docker-version` file is updated automatically.
 
 ## Customizable vs Template Files
 

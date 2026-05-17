@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - install.sh now dynamically fetches and writes the commit hash instead of using static version numbers
+- install.sh now runs `setup.sh` automatically after an infrastructure update (using detected project values), so updating no longer requires a manual second step
+- `setup.sh` is now safe to re-run: an existing `.env` is preserved instead of being overwritten, so `APP_KEY` and `DB_PASSWORD` are never regenerated on an existing project
+
+### Fixed
+- **Production stylesheet 404 / mixed content** - the production PHP image no longer rebuilds the frontend. Assets are built once by the CI workflow and shared by both the PHP and nginx images. Building twice produced a different Tailwind v4 CSS content hash in each image, so the PHP-rendered manifest referenced a CSS file the nginx container never had
+- trustProxies middleware is now reliably applied to existing projects: because the update flow runs `setup.sh` automatically, the reverse-proxy HTTPS detection fix actually reaches projects that update
 
 ## [0.1.0] - 2025-01-25
 
