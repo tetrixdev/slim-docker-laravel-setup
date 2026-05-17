@@ -31,7 +31,8 @@ ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo pdo_pgsql zip
+# pcntl: required by long-running console servers (e.g. Laravel Reverb) for signal handling
+RUN docker-php-ext-install pdo pdo_pgsql zip pcntl
 
 # Install Redis PHP extension
 RUN pecl install -o -f redis \

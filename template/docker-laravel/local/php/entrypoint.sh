@@ -17,6 +17,13 @@ find /var/www/storage -type f -exec chmod 664 {} \; 2>/dev/null || true
 find /var/www/bootstrap/cache -type d -exec chmod 775 {} \; 2>/dev/null || true
 find /var/www/bootstrap/cache -type f -exec chmod 664 {} \; 2>/dev/null || true
 
+# The public/ directory itself must be group-writable so the Vite dev server
+# (running as www-data) can write its `public/hot` marker file. On Docker
+# Desktop bind-mount UID translation hides this; on a native Linux host the
+# bind-mounted dir keeps the host UID and www-data otherwise cannot write it.
+chgrp www-data /var/www/public 2>/dev/null || true
+chmod 775 /var/www/public 2>/dev/null || true
+
 # =============================================================================
 # LARAVEL SETUP
 # =============================================================================
