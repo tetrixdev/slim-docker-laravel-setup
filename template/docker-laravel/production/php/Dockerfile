@@ -66,15 +66,9 @@ COPY www/ /var/www/
 # Install Composer dependencies (production optimized)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --verbose
 
-# Install Node.js, build assets, then remove Node.js (single layer to minimize image size)
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs \
-    && npm ci \
-    && npm run build \
-    && rm -rf node_modules \
-    && apt-get purge -y nodejs \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nodesource.list
+# Frontend assets are prebuilt once in CI and arrive via "COPY www/" above as
+# public/build/ — the same files the nginx image serves. Do not build them
+# here: a second build yields different Tailwind hashes than the nginx image.
 
 # Create storage symlink
 RUN php artisan storage:link --no-interaction
