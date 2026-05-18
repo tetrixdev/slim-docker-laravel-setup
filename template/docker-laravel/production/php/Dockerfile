@@ -65,15 +65,9 @@ COPY www/ /var/www/
 # Install Composer dependencies (production optimized)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --verbose
 
-# Frontend assets are NOT built here. They are built once by the CI workflow
-# (npm run build) before the Docker build and arrive via "COPY www/" above as
-# public/build/. The nginx image copies the same public/ directory, so both
-# containers serve a manifest that matches the files actually on disk.
-#
-# Building assets a second time inside this image is unsafe: Tailwind v4's
-# content-aware CSS generation produces a different content hash than the CI
-# build, so the PHP-rendered manifest would point at a CSS file the nginx
-# container never received, resulting in a 404 for the stylesheet.
+# Frontend assets are prebuilt once in CI and arrive via "COPY www/" above as
+# public/build/ — the same files the nginx image serves. Do not build them
+# here: a second build yields different Tailwind hashes than the nginx image.
 
 # Create storage symlink
 RUN php artisan storage:link --no-interaction
