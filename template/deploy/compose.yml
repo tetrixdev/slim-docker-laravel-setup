@@ -16,7 +16,7 @@ services:
       - ./.env:/var/www/.env:ro
     environment:
       - APP_ENV=production
-      - REDIS_HOST=${COMPOSE_PROJECT_NAME}-redis
+      - REDIS_HOST=redis
     networks:
       - app-network
     depends_on:

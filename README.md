@@ -58,6 +58,20 @@ then runs `setup.sh` automatically with your detected project values — no
 second step required. Your existing `.env` is always preserved (`APP_KEY` and
 `DB_PASSWORD` are never regenerated). Review the result with `git diff`.
 
+> **Updating from an older version that used project-prefixed service keys**:
+> if your existing `compose.yml` has service keys like `your-project-php`,
+> `your-project-nginx` (rather than the short `php`, `nginx`, …), bring the
+> stack **down before re-running install.sh**:
+>
+> ```bash
+> docker compose down
+> ```
+>
+> The new template uses short service keys with the project prefix preserved
+> only on `container_name`. Without `down` first, the next `up` will fail with
+> a container_name conflict against the orphaned old containers. Volumes are
+> preserved across the rename (volume names are unchanged).
+
 The installer is **idempotent** - it detects your project state and does the right thing:
 - Empty directory → prompts you to create Laravel first
 - Laravel root (has `artisan`) → moves files to `www/`, installs Docker setup
@@ -226,13 +240,13 @@ APP_NAME=your-project
 APP_ENV=local
 APP_DEBUG=true
 DB_CONNECTION=pgsql
-DB_HOST=your-project-postgres
+DB_HOST=postgres
 DB_DATABASE=your-project
 DB_USERNAME=your-project
 DB_PASSWORD=generated-secure-password
 
 # Redis configuration
-REDIS_HOST=your-project-redis
+REDIS_HOST=redis
 CACHE_DRIVER=redis
 SESSION_DRIVER=redis
 QUEUE_CONNECTION=redis
@@ -249,7 +263,7 @@ APP_NAME=your-project
 APP_ENV=production
 APP_DEBUG=false
 DB_CONNECTION=pgsql
-DB_HOST=your-project-postgres
+DB_HOST=postgres
 DB_DATABASE=your-project
 DB_USERNAME=your-project
 DB_PASSWORD=CHANGE_THIS_PASSWORD
@@ -274,19 +288,19 @@ docker compose down
 docker compose logs -f
 
 # Specific service
-docker compose logs -f your-project-php
+docker compose logs -f php
 ```
 
 ### Execute Commands in PHP Container
 ```bash
 # Laravel Artisan
-docker compose exec your-project-php php artisan migrate
+docker compose exec php php artisan migrate
 
 # Composer
-docker compose exec your-project-php composer install
+docker compose exec php composer install
 
 # npm
-docker compose exec your-project-php npm install
+docker compose exec php npm install
 ```
 
 ### Switch to Production
@@ -308,18 +322,18 @@ docker compose restart
 
 2. **Install dependencies** (if needed):
    ```bash
-   docker compose exec your-project-php composer install
-   docker compose exec your-project-php npm install
+   docker compose exec php composer install
+   docker compose exec php npm install
    ```
 
 3. **Run migrations**:
    ```bash
-   docker compose exec your-project-php php artisan migrate
+   docker compose exec php php artisan migrate
    ```
 
 4. **Generate application key** (if needed):
    ```bash
-   docker compose exec your-project-php php artisan key:generate
+   docker compose exec php php artisan key:generate
    ```
 
 5. **Access your application** at `http://localhost`
@@ -449,22 +463,22 @@ Production deployment uses the `deploy/` folder with pre-built images:
 
 **Laravel Storage Permissions:**
 ```bash
-docker compose exec {PROJECT_NAME}-php chown -R www-data:www-data storage bootstrap/cache
-docker compose exec {PROJECT_NAME}-php chmod -R 775 storage bootstrap/cache
+docker compose exec php chown -R www-data:www-data storage bootstrap/cache
+docker compose exec php chmod -R 775 storage bootstrap/cache
 ```
 
 **Database Connection Problems:**
 - Check containers are running: `docker compose ps`
 - Verify credentials in `.env` file
-- Restart PostgreSQL: `docker compose restart {PROJECT_NAME}-postgres`
+- Restart PostgreSQL: `docker compose restart postgres`
 
 **Nginx 502 Bad Gateway:**
-- Check PHP-FPM logs: `docker compose logs {PROJECT_NAME}-php`
-- Restart PHP container: `docker compose restart {PROJECT_NAME}-php`
+- Check PHP-FPM logs: `docker compose logs php`
+- Restart PHP container: `docker compose restart php`
 
 **Vite Development Server Issues:**
-- Check Vite is running: `docker compose logs {PROJECT_NAME}-php | grep vite`
-- Manually start: `docker compose exec {PROJECT_NAME}-php npm run dev`
+- Check Vite is running: `docker compose logs php | grep vite`
+- Manually start: `docker compose exec php npm run dev`
 
 ## Advanced Configuration
 
