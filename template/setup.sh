@@ -341,10 +341,9 @@ setup_laravel_docker() {
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{LARAVEL_DIR}}/$LARAVEL_DIR/g" compose.yml
     print_success "docker-compose.yml configured"
 
-    # Process nginx template
-    print_info "Updating nginx configuration..."
-    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" docker-laravel/shared/nginx/default.conf
-    print_success "Nginx configuration updated"
+    # docker-laravel/shared/nginx/default.conf is now project-agnostic
+    # (fastcgi_pass php:9000; — `php` is the compose service name, auto-aliased
+    # by Docker on the project's internal network). No substitution needed.
 
     # Copy and process GitHub Action workflow
     print_info "Setting up GitHub Action workflow..."

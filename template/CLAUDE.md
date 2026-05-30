@@ -128,5 +128,32 @@ Remove or rename `schedule-work.conf` in supervisor directory.
 
 ### Database backup
 ```bash
-docker compose exec {{PROJECT_NAME}}-php pg_dump -h {{PROJECT_NAME}}-postgres -U {{PROJECT_NAME}} {{PROJECT_NAME}} > backup.sql
+docker compose exec php pg_dump -h postgres -U {{PROJECT_NAME}} {{PROJECT_NAME}} > backup.sql
 ```
+
+## Naming convention: service-names for internal hostnames
+
+Compose **service keys** (`php`, `nginx`, `postgres`, `redis`) are intentionally
+short and stable. Docker auto-aliases each container by its service name on
+every network it joins, so:
+
+- The shared nginx config can `fastcgi_pass php:9000;` without knowing the
+  project's name.
+- `.env` uses `DB_HOST=postgres`, `REDIS_HOST=redis` — same pattern for dev
+  and production, independent of `COMPOSE_PROJECT_NAME`.
+
+**Container_names** keep the `<PROJECT_NAME>-*` prefix so externally-visible
+identifiers (in `docker ps`, on a shared `main-network`, in proxy-nginx
+upstreams, in ghcr image paths) remain namespaced per project.
+
+**Important constraint:** app-internal services (php, postgres, redis) must
+**not** join an external shared network. The short service-name alias would
+otherwise be advertised there and could collide with a sibling project that
+uses the same convention. Only externally-proxied services (the web `nginx`,
+or a WebSocket bridge) should join the shared proxy network.
+
+Externally-proxied services still publish their short alias on the shared
+network — two sibling projects with `nginx` on `main-network` will both
+advertise `nginx`, so anything routing across that network (e.g. proxy-nginx)
+must target the **container_name** (`<PROJECT_NAME>-nginx`), not the bare
+service alias.

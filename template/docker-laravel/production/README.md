@@ -98,7 +98,7 @@ See `.env.example` in this folder for the full list. Key variables:
 |----------|-------------|
 | `APP_URL` | Your production domain (https://...) |
 | `DB_PASSWORD` | Database password (change from default!) |
-| `REDIS_HOST` | Redis container name (auto-set) |
+| `REDIS_HOST` | Redis service name on the project's internal network (default: `redis`) |
 
 ## Proxy Configuration
 
